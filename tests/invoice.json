@@ -1,0 +1,33 @@
+{
+  "invoice": {
+    "id": 6763297,
+    "client_id": 1929151,
+    "period_start": null,
+    "period_end": null,
+    "number": "1",
+    "issued_at": "2015-04-22",
+    "due_at": "2015-04-22",
+    "amount": 100,
+    "currency": "United States Dollar - USD",
+    "state": "open",
+    "notes": "",
+    "purchase_order": "",
+    "due_amount": 100,
+    "due_at_human_format": "upon receipt",
+    "created_at": "2015-04-21T18:41:58Z",
+    "updated_at": "2015-04-21T18:42:02Z",
+    "tax": null,
+    "tax_amount": 0,
+    "subject": "",
+    "recurring_invoice_id": null,
+    "tax2": null,
+    "tax2_amount": 0,
+    "client_key": "43d9342a017e262c33a395ef3b9dca294f736792",
+    "estimate_id": null,
+    "discount": null,
+    "discount_amount": 0,
+    "retainer_id": null,
+    "created_by_id": 508343,
+    "csv_line_items": "kind,description,quantity,unit_price,amount,taxed,taxed2,project_id\nProduct,A description,1.00,100.00,100.0,false,false,\n"
+  }
+}

@@ -9,6 +9,4 @@ bin/
 build/
 local/
 *.egg-info/
-*/*.json
-*/*.csv
 

@@ -4,7 +4,7 @@ from time import time
 
 sys.path.insert(0, sys.path[0]+"/..")
 
-import harvest
+import statsbiblioteket.harvest as harvest
 
 class TestHarvest(unittest.TestCase):
     def setUp(self):
@@ -14,17 +14,21 @@ class TestHarvest(unittest.TestCase):
         pass
 
     def test_status_up(self):
-        self.assertEqual("up", harvest.HarvestStatus().get(), "Harvest must be down?")
+        real = harvest.status()['description']
+        expected = "All Systems Operational"
+        assert real == expected
 
     def test_status_not_down(self):
-        self.assertNotEqual("down", harvest.HarvestStatus().get(), "Harvest must be down?")
+        real = harvest.status()['description']
+        expected = "down"
+        assert real != expected
 
     def test_get_today(self):
-        today = self.harvest.get_today()
+        today = self.harvest.today
         self.assertTrue(today.has_key("for_day"))
 
     def test_add(self):
-        today = self.harvest.get_today()
+        today = self.harvest.today
         start = time()
         project = "%s"%today['projects'][0]['id']
         task = "%s"%today['projects'][0]['tasks'][0]['id']
@@ -34,8 +38,7 @@ class TestHarvest(unittest.TestCase):
             "project_id": project,
             "task_id": task
         }))
-        exists = self.harvest.get_today()
-
+        exists = self.harvest.today
         #test that the entry got added
         self.assertTrue(len(exists['day_entries']) > len(today['day_entries']))
 

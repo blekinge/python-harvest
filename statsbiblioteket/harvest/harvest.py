@@ -627,6 +627,7 @@ class Harvest(object):
             raise HarvestError(exc)
 
 
+
 def status():
     """
     Global scope status funciton

@@ -1,5 +1,7 @@
-from setuptools import setup, find_packages
-import sys, os
+import os
+
+from setuptools import setup
+
 
 # Utility function to read the README file.
 # Used for the long_description.  It's nice, because now 1) we have a top level
@@ -8,11 +10,44 @@ import sys, os
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
+
+requirements = [
+    'requests',
+    'requests_oauthlib',
+    # TODO: put package requirements here
+]
+
+test_requirements = [
+    'pytest==2.9.2',
+    'pytest-runner==2.8',
+    # TODO: put package test requirements here
+]
+
 setup(
-    name='python-harvest',
-    version=read('VERSION'),
+    name='statsbiblioteket.harvest',
+    version='1.0.4',
     description="Harvest api client",
-    long_description=read('README'),
+    long_description=read('README.md'),
+    url='https://github.com/blekinge/python-harvest',
+    author="Asger Askov Blekinge",
+    author_email='asger.askov.blekinge@gmail.com',
+
+    packages=[
+        'statsbiblioteket.harvest',
+    ],
+    include_package_data=True,
+    install_requires=requirements,
+
+    test_suite='tests',
+    tests_require=test_requirements,
+    setup_requires=['pytest-runner'],
+
+    entry_points={
+        "console_scripts": ['github_cloner = '
+                            'statsbiblioteket.github_cloner.github_cloner'
+                            ':main']
+    },
+
     # http://pypi.python.org/pypi?:action=list_classifiers
     classifiers=[
         "Development Status :: 5 - Production/Stable",
@@ -25,14 +60,8 @@ setup(
         "Topic :: Internet :: WWW/HTTP :: Site Management",
         "Topic :: Utilities",
         "License :: OSI Approved :: MIT License",
-        ],
+    ],
     keywords='harvestapp timetracking api',
-    author='Alex Goretoy',
-    author_email='alex@goretoy.com',
-    url='https://github.com/lionheart/python-harvest',
     license='MIT License',
-    packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
-    include_package_data=True,
     zip_safe=True,
-    install_requires=read("requirements.txt").split("\n")
 )

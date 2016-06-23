@@ -8,7 +8,7 @@ Harvest Time Tracking API Client
 :license: Apache 2.0, see LICENSE for more details.
 """
 
-from .harvest import *
+from statsbiblioteket.harvest.harvest import Harvest
 from .metadata import (
     __author__,
     __copyright__,

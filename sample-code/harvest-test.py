@@ -7,7 +7,7 @@ import os.path as op
 from glob import glob
 from csv import DictWriter, QUOTE_ALL
 
-from harvest import Harvest
+from statsbiblioteket.harvest import Harvest
 import simplejson
 import logging
 
@@ -15,9 +15,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 HARVEST_CREDENTIALS_DEFAULT = "~/.harvest"
-HARVEST_CREDENTIALS = os.environ.get("HARVEST", HARVEST_CREDENTIALS_DEFAULT)
+HARVEST_CREDENTIALS = os.environ._get("HARVEST", HARVEST_CREDENTIALS_DEFAULT)
 LOG_PATH_DEFAULT = op.expanduser(op.join("~", "logs"))
-LOG_PATH = os.environ.get("LOG", LOG_PATH_DEFAULT)
+LOG_PATH = os.environ._get("LOG", LOG_PATH_DEFAULT)
 LOG_FILE = op.join(LOG_PATH, "harvest.log")
 
 
@@ -42,7 +42,7 @@ def test_json(json):
     """
     Test for a failed authentication request
     """
-    return not (type(json) is dict and json.get("message") == "Authentication failed for API request.")
+    return not (type(json) is dict and json._get("message") == "Authentication failed for API request.")
 
 
 def main(client):
@@ -153,7 +153,7 @@ def json_to_csv():
                 i = 0
                 for row in data:
                     d0 = row[key]
-                    d = {field: d0.get(field) for field in fields}
+                    d = {field: d0._get(field) for field in fields}
                     dw.writerow(d)
                     i += 1
                 logger.info("{0} CSV rows".format(i))

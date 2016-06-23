@@ -5,7 +5,8 @@ from urlparse import urlparse
 import requests
 from requests_oauthlib import OAuth2Session
 
-
+from statsbiblioteket.harvest.harvest_types import json_type_hook, \
+    ObjectEncoder
 
 HARVEST_STATUS_URL = 'http://www.harveststatus.com/api/v2/status.json'
 
@@ -78,12 +79,14 @@ class Rest(object):
 
             resp = self._session.request(method=method,
                                          url=url,
-                                         data=json.dumps(data),
+                                         data=json.dumps(data,
+                                                         cls=ObjectEncoder),
                                          params=params)
             resp.raise_for_status()
             if 'DELETE' not in method:
-                return resp.json()
-            return resp
+                return resp.json(object_hook=json_type_hook)
+            else:
+                return resp.text
         except Exception as exc:
             raise HarvestError(exc)
 

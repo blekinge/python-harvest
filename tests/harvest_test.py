@@ -1,11 +1,17 @@
+import json
+import os
 import sys
 from time import time
 
 import pytest
 
 from statsbiblioteket.harvest import Harvest
+from statsbiblioteket.harvest.harvest_types import json_type_hook, \
+    ObjectEncoder
 
 sys.path.insert(0, sys.path[0] + "/..")
+
+curdir = os.path.dirname(os.path.realpath(__file__))
 
 
 class TestHarvest():
@@ -52,3 +58,17 @@ class TestHarvest():
                     assert "1.5" == "%s" % entry['hours']
                     assert project == "%s" % entry['project_id']
                     assert task == "%s" % entry['task_id']
+
+    def test_cycle(self):
+        # load as pure json
+        with open(curdir+'/client.json', 'r') as clientjson:
+            pure = json.load(clientjson)
+            pure = json.dumps(pure)
+
+        # load as object and decode back to json
+        with open(curdir+'/client.json', 'r') as clientjson:
+            pythonObjectStructure = json.load(clientjson,
+                                              object_hook=json_type_hook)
+
+            redumped = json.dumps(pythonObjectStructure, cls=ObjectEncoder)
+        assert pure == redumped

@@ -7,13 +7,14 @@
 """
 
 import json
-from urlparse import urlparse
 from base64 import b64encode as enc64
+from urlparse import urlparse
 
 import requests
 from requests_oauthlib import OAuth2Session
 
 HARVEST_STATUS_URL = 'http://www.harveststatus.com/api/v2/status.json'
+
 
 # pylint: disable=too-many-arguments
 # pylint: disable=bare-except
@@ -57,8 +58,10 @@ class Harvest(object):
             self.__email = email.strip()
             self.__password = password
             if put_auth_in_header:
-                basic_auth = enc64('{self.email}:{self.password}'.format(self=self))
-                self.__headers['Authorization'] = 'Basic {0}'.format(basic_auth)
+                basic_auth = enc64(
+                    '{self.email}:{self.password}'.format(self=self))
+                self.__headers['Authorization'] = 'Basic {0}'.format(
+                    basic_auth)
         elif client_id and token:
             self.__auth = 'OAuth2'
             self.__client_id = client_id
@@ -274,14 +277,18 @@ class Harvest(object):
         """
         Get the timesheets for a project
         """
-        url = '/projects/{0}/entries?from={1}&to={2}'.format(project_id, start_date, end_date)
+        url = '/projects/{0}/entries?from={1}&to={2}'.format(project_id,
+                                                             start_date,
+                                                             end_date)
         return self._get(url)
 
     def expenses_for_project(self, project_id, start_date, end_date):
         """
         Get the expenses for a project between a start date and end date
         """
-        url = '/projects/{0}/expenses?from={1}&to={2}'.format(project_id, start_date, end_date)
+        url = '/projects/{0}/expenses?from={1}&to={2}'.format(project_id,
+                                                              start_date,
+                                                              end_date)
         return self._get(url)
 
     def get_project(self, project_id):
@@ -399,7 +406,8 @@ class Harvest(object):
         CREATE A NEW TASK AND ASSIGN IT TO A PROJECT
         POST /projects/#{project_id}/task_assignments/add_with_create_new_task
         """
-        url = '/projects/{0}/task_assignments/add_with_create_new_task'.format(project_id)
+        url = '/projects/{0}/task_assignments/add_with_create_new_task'.format(
+            project_id)
         return self._post(url, kwargs)
 
     def remove_task_from_project(self, project_id, task_id):
@@ -623,7 +631,8 @@ class Harvest(object):
             if 'Authorization' not in self.__headers:
                 kwargs['auth'] = (self.email, self.password)
         elif self.auth == 'OAuth2':
-            requestor = OAuth2Session(client_id=self.client_id, token=self.token)
+            requestor = OAuth2Session(client_id=self.client_id,
+                                      token=self.token)
 
         try:
             resp = requestor.request(**kwargs)
@@ -635,7 +644,6 @@ class Harvest(object):
             return resp
         except Exception as exc:
             raise HarvestError(exc)
-
 
 
 def status():

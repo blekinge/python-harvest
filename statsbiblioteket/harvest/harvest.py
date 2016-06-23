@@ -29,6 +29,16 @@ class Harvest(object):
     """
     Harvest class to implement Harvest API
     """
+
+    @classmethod
+    def oath(cls, uri, client_id, token):
+        return Harvest(uri=uri, client_id=client_id, token=token)
+
+    @classmethod
+    def basic(cls, uri, email, password, put_auth_in_header=True):
+        return Harvest(uri=uri, email=email, password=password,
+                       put_auth_in_header=put_auth_in_header)
+
     def __init__(self, uri, email=None, password=None, client_id=None,
                  token=None, put_auth_in_header=True):
         """ Init method """

@@ -9,16 +9,10 @@ Harvest Time Tracking API Client
 """
 
 from statsbiblioteket.harvest.harvest import Harvest
-from .metadata import (
-    __author__,
-    __copyright__,
-    __email__,
-    __license__,
-    __maintainer__,
-    __version__,
-)
 
-__all__ = [
-    '__author__', '__copyright__', '__email__', '__license__',
-    '__maintainer__', '__version__', 'harvest'
-]
+__version__ = "1.0.4"
+__author__ = "Alex Goretoy"
+__copyright__ = "Copyright 2012, Alex Goretoy"
+__maintainer__ = "Alex Goretoy"
+__email__ = "alex@goretoy.com"
+__license__ = "MIT License"

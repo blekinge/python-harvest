@@ -14,6 +14,7 @@ def read(fname):
 requirements = [
     'requests',
     'requests_oauthlib',
+    'typing'
     # TODO: put package requirements here
 ]
 

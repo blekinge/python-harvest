@@ -10,4 +10,4 @@ bumpversion==0.5.3 #For releasing
 flake8==2.4.1 #For code style checks
 tox==2.1.1 # For testing with different versions of python
 Sphinx==1.4.4 #For building the docs
-sphinx-argparse==0.1.15 #Argparse module for sphinx, to autodocument the CLI
+½#sphinx-argparse==0.1.15 #Argparse module for sphinx, to autodocument the CLI

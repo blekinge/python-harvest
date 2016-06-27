@@ -1,3 +1,6 @@
+import typing
+
+from statsbiblioteket.harvest.harvest_types import Invoice
 from statsbiblioteket.harvest.rest import Rest
 
 
@@ -6,7 +9,7 @@ class Invoices(Rest):
 
     def invoices(self, start_date=None, end_date=None,
                  updated_since=None, client_id=None,
-                 status_enum=None):
+                 status_enum=None) -> typing.List[Invoice]:
         """
         Get all the invoices, optionally filtered by:
         - start and end dates
@@ -28,7 +31,7 @@ class Invoices(Rest):
             params = {}
         return self._get('/invoices', params=params)
 
-    def get_invoice(self, invoice_id):
+    def get_invoice(self, invoice_id) -> Invoice:
         """
         Get an invoice by `invoice_id`
         http://help.getharvest.com/api/invoices-api/invoices/show-invoices/#show-a-single-invoice

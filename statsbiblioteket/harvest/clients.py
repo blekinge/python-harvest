@@ -1,9 +1,12 @@
+import typing
+
+from statsbiblioteket.harvest.harvest_types import Client
 from statsbiblioteket.harvest.rest import Rest
 
 class Clients(Rest):
     # Clients
 
-    def clients(self, updated_since=None):
+    def clients(self, updated_since=None) -> typing.List[Client]:
         """
         Get clients (optionally update since a date)
         http://help.getharvest.com/api/clients-api/clients/using-the-clients-api/#get-all-clients
@@ -14,7 +17,7 @@ class Clients(Rest):
             params['updated_since'] = updated_since
         return self._get(url,params=params)
 
-    def get_client(self, client_id):
+    def get_client(self, client_id) -> Client:
         """
         Get a single client by client_id
         http://help.getharvest.com/api/clients-api/clients/using-the-clients-api/#get-a-single-client

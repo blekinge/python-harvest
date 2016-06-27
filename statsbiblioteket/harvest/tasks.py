@@ -1,10 +1,13 @@
+import typing
+
+from statsbiblioteket.harvest.harvest_types import Task
 from statsbiblioteket.harvest.rest import Rest
 
 
 class Tasks(Rest):
     # Tasks
 
-    def tasks(self, updated_since=None):
+    def tasks(self, updated_since=None) -> typing.List[Task]:
         """
         Get all teh tasks (optionally updated since a particular date)
         /tasks?updated_since=2010-09-25+18%3A30
@@ -15,7 +18,7 @@ class Tasks(Rest):
             params['updated_since'] = updated_since
         return self._get(url,params=params)
 
-    def get_task(self, task_id):
+    def get_task(self, task_id) -> Task:
         """
         Get a particular task by task_id
         """

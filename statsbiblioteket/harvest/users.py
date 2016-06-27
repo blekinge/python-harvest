@@ -1,10 +1,13 @@
+import typing
+
+from statsbiblioteket.harvest.harvest_types import User
 from statsbiblioteket.harvest.rest import Rest
 
 
-class People(Rest):
+class Users(Rest):
     # People
 
-    def people(self):
+    def users(self) -> typing.List[User]:
         """
         Get all the people
         http://help.getharvest.com/api/users-api/users/managing-users/
@@ -12,25 +15,25 @@ class People(Rest):
         url = '/people'
         return self._get(url)
 
-    def get_person(self, person_id):
+    def get_user(self, user_id) -> User:
         """
         Get a particular person by person_id
         """
-        url = '/people/{0}'.format(person_id)
+        url = '/people/{0}'.format(user_id)
         return self._get(url)
 
-    def toggle_person_active(self, person_id):
+    def toggle_user_active(self, user_id):
         """
         Toggle the active flag of a person
         http://help.getharvest.com/api/users-api/users/managing-users/#toggle-an-existing-user
         """
-        url = '/people/{0}/toggle'.format(person_id)
+        url = '/people/{0}/toggle'.format(user_id)
         return self._get(url)
 
-    def delete_person(self, person_id):
+    def delete_user(self, user_id):
         """
         Delete a person
         http://help.getharvest.com/api/users-api/users/managing-users/#delete-a-user
         """
-        url = '/people/{0}'.format(person_id)
+        url = '/people/{0}'.format(user_id)
         return self._delete(url)

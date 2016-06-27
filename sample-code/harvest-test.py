@@ -55,7 +55,7 @@ def main(client):
         ("clients.json", client.clients),
         ("projects.json", client.projects),
         ("contacts.json", client.contacts),
-        ("people.json", client.people),
+        ("people.json", client.users),
         ("tasks.json", client.tasks),
         ("invoices.json", client.invoices),
     ]

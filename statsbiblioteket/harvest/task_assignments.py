@@ -1,7 +1,7 @@
 from statsbiblioteket.harvest.rest import Rest
 
 
-class TaskAssignment(Rest):
+class TaskAssignments(Rest):
     # Task Assignment: Assigning tasks to projects
 
     def get_all_tasks_from_project(self, project_id):

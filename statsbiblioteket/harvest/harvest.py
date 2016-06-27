@@ -10,16 +10,16 @@ from statsbiblioteket.harvest.clients import Clients
 from statsbiblioteket.harvest.contacts import Contacts
 from statsbiblioteket.harvest.expense_categories import ExpenseCategories
 from statsbiblioteket.harvest.invoices import Invoices
-from statsbiblioteket.harvest.people import People
 from statsbiblioteket.harvest.projects import Projects
-from statsbiblioteket.harvest.task_assignment import TaskAssignment
+from statsbiblioteket.harvest.task_assignments import TaskAssignments
 from statsbiblioteket.harvest.tasks import Tasks
 from statsbiblioteket.harvest.timetracking import Timetracking
+from statsbiblioteket.harvest.users import Users
 
 
 
-class Harvest(Clients, Contacts, ExpenseCategories, Invoices, People, Projects,
-              Tasks, Timetracking, TaskAssignment):
+class Harvest(Clients, Contacts, ExpenseCategories, Invoices, Users, Projects,
+              Tasks, Timetracking, TaskAssignments):
     """
     Harvest class to implement Harvest API
     """

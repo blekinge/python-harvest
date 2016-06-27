@@ -1,20 +1,23 @@
+import typing
+
+from statsbiblioteket.harvest.harvest_types import Project, TimeSheet, Expense
 from statsbiblioteket.harvest.rest import Rest
 
 
 class Projects(Rest):
-    def projects(self, client=None):
+    def projects(self, client_id: str =None) -> typing.List[Project]:
         """
         Get all the projects (optinally restricted to a particular client)
         """
         params = {}
-        if client:
+        if client_id:
             # You can filter by client_id and updated_since.
             # For example to show only the projects belonging to client with the id 23445.
             # GET /projects?client=23445
-            params = {'client': client}
+            params = {'client': client_id}
         return self._get('/projects', params=params)
 
-    def projects_for_client(self, client_id):
+    def projects_for_client(self, client_id: str) -> typing.List[Project]:
         """
         Get the projects for a particular client
         """
@@ -23,7 +26,8 @@ class Projects(Rest):
         url = '/projects'
         return self._get(url, params=params)
 
-    def timesheets_for_project(self, project_id, start_date, end_date):
+    def timesheets_for_project(self, project_id, start_date, end_date) -> \
+    typing.List[TimeSheet]:
         """
         Get the timesheets for a project
         """
@@ -33,36 +37,37 @@ class Projects(Rest):
         url = '/projects/{0}/entries'.format(project_id)
         return self._get(url, params=params)
 
-    def expenses_for_project(self, project_id, start_date, end_date):
+    def expenses_for_project(self, project_id, start_date, end_date) -> \
+    typing.List[Expense]:
         """
         Get the expenses for a project between a start date and end date
         """
-        params = {'from': start_date,
-                  'to': end_date}
+        params = {'from': start_date, 'to': end_date}
 
         url = '/projects/{0}/expenses'.format(project_id)
         return self._get(url)
 
-    def get_project(self, project_id):
+    def get_project(self, project_id) -> typing.List[Project]:
         """
         Get a particular project
         """
         url = '/projects/{0}'.format(project_id)
         return self._get(url)
 
-    def create_project(self, **kwargs):
+    def create_project(self, project) -> str:
         """
-        Create a project
-        Example: client.create_project(project={"name": title, "client_id": client_id})
+        Create a project and return the project id
         """
-        return self._post('/projects', data=kwargs)
+        return self._post('/projects', data=project)
 
-    def update_project(self, project_id, **kwargs):
+    def update_project(self, project_id, project):
         """
         Update a project
+        Post similar XML or JSON as with create a new project, but include
+        project-id as part of the project.
         """
         url = '/projects/{0}'.format(project_id)
-        return self._put(url, data=kwargs)
+        return self._put(url, data=project)
 
     def toggle_project_active(self, project_id):
         """
@@ -73,6 +78,11 @@ class Projects(Rest):
     def delete_project(self, project_id):
         """
         Delete a project
+
+        If the project does not have any timesheet data tracked to it, it is
+        deleted with HTTP Response: 200 OK. If the project does have timesheet
+        entries associated, the project is not deleted and
+        HTTP Response: 400 Bad Request is returned.
         """
         url = '/projects/{0}'.format(project_id)
         return self._delete(url)

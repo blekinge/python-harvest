@@ -1,9 +1,12 @@
+import typing
+
+from statsbiblioteket.harvest.harvest_types import Contact
 from statsbiblioteket.harvest.rest import Rest
 
 class Contacts(Rest):
     # Client Contacts
 
-    def contacts(self, updated_since=None):
+    def contacts(self, updated_since=None)  -> typing.List[Contact]:
         """
         Get list of all contacts (optionally since a given date)
         http://help.getharvest.com/api/clients-api/clients/using-the-client-contacts-api/
@@ -14,7 +17,7 @@ class Contacts(Rest):
             params['updated_since'] = updated_since
         return self._get(url,params=params)
 
-    def get_contact(self, contact_id):
+    def get_contact(self, contact_id) -> Contact:
         """
         Get a single contact by contact_id
         http://help.getharvest.com/api/clients-api/clients/using-the-client-contacts-api/#get-a-client-contact

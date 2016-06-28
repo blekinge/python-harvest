@@ -25,6 +25,7 @@ class Clients(Rest):
         return self._get('/clients/{0}'.format(client_id))
 
     def create_client(self, **kwargs):
+        # TODO types
         """
         Create a new client
         client.create_client(client={"name":"jo"})
@@ -34,6 +35,7 @@ class Clients(Rest):
         return self._post(url, data=kwargs)
 
     def update_client(self, client_id, **kwargs):
+        # TODO types
         """
         Update a client
         http://help.getharvest.com/api/clients-api/clients/using-the-clients-api/#update-a-client

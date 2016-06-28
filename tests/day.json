@@ -1,0 +1,80 @@
+{
+  'day_entries': [],
+  'for_day': '2016-06-28',
+  'projects': [
+    {
+      'name': 'temp2Project',
+      'client_currency': 'United States Dollar - USD',
+      'client_currency_symbol': '$',
+      'billable': False,
+      'code': '',
+      'client_id': 4608159,
+      'tasks': [
+        {
+          'id': 6171742,
+          'name': 'Business Development',
+          'billable': False
+        },
+        {
+          'id': 6171738,
+          'name': 'Graphic Design',
+          'billable': False
+        },
+        {
+          'id': 6171740,
+          'name': 'Marketing',
+          'billable': False
+        },
+        {
+          'id': 6171739,
+          'name': 'Programming',
+          'billable': False
+        },
+        {
+          'id': 6171741,
+          'name': 'Project Management',
+          'billable': False
+        }
+      ],
+      'id': 11108532,
+      'client': 'testClient'
+    },
+    {
+      'name': 'testProject',
+      'client_currency': 'United States Dollar - USD',
+      'client_currency_symbol': '$',
+      'billable': True,
+      'code': '',
+      'client_id': 4608159,
+      'tasks': [
+        {
+          'id': 6171742,
+          'name': 'Business Development',
+          'billable': False
+        },
+        {
+          'id': 6171738,
+          'name': 'Graphic Design',
+          'billable': True
+        },
+        {
+          'id': 6171740,
+          'name': 'Marketing',
+          'billable': True
+        },
+        {
+          'id': 6171739,
+          'name': 'Programming',
+          'billable': True
+        },
+        {
+          'id': 6171741,
+          'name': 'Project Management',
+          'billable': True
+        }
+      ],
+      'id': 11107992,
+      'client': 'testClient'
+    }
+  ]
+}

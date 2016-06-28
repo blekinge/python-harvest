@@ -1,3 +1,6 @@
+import typing
+
+
 class Client(object):
     """
     Data class for Harvest Users.
@@ -28,7 +31,22 @@ class Client(object):
                  highrise_id=None, cache_version=None, updated_at=None,
                  created_at=None, currency_symbol=None, details=None,
                  default_invoice_timeframe=None, last_invoice_kind=None):
-        super(Client, self).__init__()
+        """
+
+        :param name: New client name.
+        :param id:
+        :param active: Determines if the client is active, or archived. Options: true, false.
+        :param currency: The currency you’d like to use for the client.
+        :param highrise_id: Optional Highrise ID for our legacy integration
+        :param cache_version:
+        :param updated_at:
+        :param created_at:
+        :param currency_symbol: The symbol that correlates to the selected currency.
+        :param details: Additional details, normally used for address information.
+        :param default_invoice_timeframe:
+        :param last_invoice_kind:
+        """
+        super().__init__()
         self.id = id
         self.name = name
         self.active = active
@@ -73,7 +91,7 @@ class Contact(object):
                  last_name=None,
                  email=None, phone_office=None, phone_mobile=None, fax=None,
                  title=None, created_at=None, updated_at=None):
-        super(Contact, self).__init__()
+        super().__init__()
         self.id = id
         self.client_id = client_id
         self.first_name = first_name
@@ -85,39 +103,6 @@ class Contact(object):
         self.title = title
         self.created_at = created_at
         self.updated_at = updated_at
-
-
-class Expense_Category(object):
-    """
-
-    ::
-
-        {
-            "expense_category": {
-                "id": 1338056,
-                "name": "Entertainment",
-                "unit_name": null,
-                "unit_price": null,
-                "created_at": "2015-04-17T20:28:12Z",
-                "updated_at": "2015-04-17T20:28:12Z",
-                "deactivated": false
-            }
-        }
-
-
-    """
-
-    def __init__(self, id=None, name=None, unit_name=None, unit_price=None,
-                 created_at=None, updated_at=None, deactivated=None):
-        super(Expense_Category, self).__init__()
-        self.id = id
-        self.name = name
-        self.unit_name = unit_name
-        self.unit_price = unit_price
-        self.created_at = created_at
-        self.updated_at = updated_at
-        self.deactivated = deactivated
-
 
 class Invoice(object):
     """
@@ -165,8 +150,61 @@ class Invoice(object):
                  recurring_invoice_id=None, tax2=None, tax2_amount=None,
                  client_key=None, estimate_id=None, discount=None,
                  discount_amount=None, retainer_id=None, created_by_id=None,
-                 csv_line_items=None):
-        super(Invoice, self).__init__()
+                 csv_line_items=None, kind=None, projects_to_invoice=None,
+                 import_hours=None, import_expense=None,
+                 expense_period_start=None, expense_period_end=None,
+                 expense_summary_kind=None):
+        """
+        User Editable Parameters
+            :param client_id: A valid client-id
+            :param period_start: Date for included project hours. (Example: 2015-04-22)
+            :param period_end: End date for included project hours. (Example: 2015-05-22)
+            :param number: Optional invoice number. If no value is set, the number will be automatically generated.
+            :param issued_at: Invoice creation date. (Example: 2015-04-22)
+            :param due_at:
+            :param amount:
+            :param currency: A valid currency format (Example: United States Dollar - USD). Optional, and will default to the client currency if no value is passed. Click here for a list of supported currencies
+            :param notes: Optional invoice notes.
+            :param purchase_order: Optional purchase order number.
+            :param due_amount:
+            :param due_at_human_format: Invoice due date. Acceptable formats are NET N where N is the number of days until the invoice is due.
+            :param tax: First tax rate for created invoice. Optional. Account default used otherwise.
+            :param tax_amount:
+            :param subject: Optional invoice subject.
+            :param tax2: Second tax rate for created invoice. Optional. Account default used otherwise.
+            :param tax2_amount:
+            :param discount: Optional value to discount invoice total.
+            :param discount_amount:
+            :param csv_line_items: Used to create line items in free-form invoices. Entries should have their entries enclosed in quotes when they contain extra commas. This is especially important if you are using a number format which uses commas as the decimal separator.
+            :param kind: Invoice type. Options: free-form, project, task, people, detailed. (See Invoice Types)
+            :param projects_to_invoice: Comma separated project IDs to gather data from, unused for free-form invoices.
+            :param import_hours: Hours to import into invoices. Options: all(import all hours), yes (import hours using period-start, period-end), no (do not import hours).
+            :param import_expense: Expenses to import into invoices. Options: all(import all expenses), yes (import expenses using expense-period-start, expense-period-end), no (do not import expenses).
+            :param expense_period_start: Date for included project expenses. (Example: 2015-04-22)
+            :param expense_period_end: End date for included project expenses. (Example: 2015-05-22)
+            :param expense_summary_kind: Summary type for expenses in an invoice. Options: project, people, category, detailed.
+
+        Parameters Generated By Harvest
+            :param client_key:	Value to generate URL to client dashboard. (Example: https://YOURACCOUNT.harvestapp.com/clients/invoices/{CLIENTKEY})
+            :param estimate_id:	This value will exist if an estimate was converted into an invoice.
+            :param retainer_id: This value will exist if the invoice was created from a retainer.
+            :param recurring_invoice_id:	This value will exist if the invoice is recurring, and automatically generated.
+            :param created_by_id:   User ID of the invoice creator.
+            :param updated_at:	    Date invoice was last updated. (Example: 2015-04-09T12:07:56Z)
+            :param created_at:      Date invoice was created. (Example: 2015-04-09T12:07:56Z)
+            :param state:           Updated when invoice is created, sent, paid, late, or written off. Options: draft, paid, late, sent, written-off.
+
+
+        Invoice Types
+            Type	    Description
+            free-form   Creates free form invoice. Line items added with csv-line-items
+            project     Gathers hours & expenses from Harvest grouped by projects.
+            task        Gathers hours & expenses from Harvest grouped by task.
+            people      Gathers hours & expenses from Harvest grouped by person.
+            detailed    Uses a line item for each hour & expense entry, including detailed notes.
+
+        """
+        super().__init__()
         self.id = id
         self.client_id = client_id
         self.period_start = period_start
@@ -196,6 +234,120 @@ class Invoice(object):
         self.retainer_id = retainer_id
         self.created_by_id = created_by_id
         self.csv_line_items = csv_line_items
+        self.expense_summary_kind = expense_summary_kind
+        self.kind = kind
+        self.projects_to_invoice = projects_to_invoice
+        self.import_hours = import_hours
+        self.import_expense = import_expense
+        self.period_start = period_start
+        self.period_end = period_end
+        self.expense_period_start = expense_period_start
+        self.expense_period_end = expense_period_end
+
+
+class ExpenseCategory(object):
+    """
+
+    ::
+
+        expense_category": {
+                "id": 1338056,
+                "name": "Entertainment",
+                "unit_name": null,
+                "unit_price": null,
+                "created_at": "2015-04-17T20:28:12Z",
+                "updated_at": "2015-04-17T20:28:12Z",
+                "deactivated": false
+        }
+    """
+
+    def __init__(self, id=None, name=None, unit_name=None, unit_price=None,
+                 created_at=None, updated_at=None, deactivated=None):
+        super().__init__()
+        self.id = id
+        self.name = name
+        self.unit_name = unit_name
+        self.unit_price = unit_price
+        self.created_at = created_at
+        self.updated_at = updated_at
+        self.deactivated = deactivated
+
+
+class Expense(object):
+    """
+
+    ::
+
+        "expense": {
+            "id": 7631396,
+            "total_cost": 14,
+            "units": 14,
+            "created_at": "2015-04-21T14:20:34Z",
+            "updated_at": "2015-04-21T14:34:27Z",
+            "project_id": 3554414,
+            "expense_category_id": 1338061,
+            "user_id": 508343,
+            "spent_at": "2015-04-17",
+            "is_closed": false,
+            "notes": "Your Updated Expense",
+            "invoice_id": 0,
+            "billable": false,
+            "company_id": 210377,
+            "has_receipt": false,
+            "receipt_url": "",
+            "is_locked": false,
+            "locked_reason": null
+        }
+
+    """
+
+    def __init__(self, id=None, notes: str = None, total_cost: int = None,
+                 project_id=None, expense_category_id=None,
+                 billable: bool = None, spent_at=None, units: int = None,
+                 created_at=None, updated_at=None, user_id=None,
+                 is_closed=None, invoice_id=None, company_id=None,
+                 has_receipt=None, receipt_url=None, is_locked=None,
+                 locked_reason=None):
+        """
+        :param id:
+        :param notes: Expense entry notes
+        :param total_cost: integer value for the expense entry
+        :param project_id: Valid and existing project ID
+        :param expense_category_id: Valid and existing expense category ID
+        :param billable: Options: true, false. Note: Only expenses that are billable can be invoiced.
+        :param spent_at: Date for expense entry
+        :param units: integer value for use with an expense calculated by unit price (Example: Mileage)
+        :param created_at:
+        :param updated_at:
+        :param user_id:
+        :param is_closed:
+        :param invoice_id:
+        :param company_id:
+        :param has_receipt:
+        :param receipt_url:
+        :param is_locked:
+        :param locked_reason:
+        """
+        super().__init__()
+        self.id = id
+        self.total_cost = total_cost
+        self.units = units
+        self.created_at = created_at
+        self.updated_at = updated_at
+        self.project_id = project_id
+        self.expense_category_id = expense_category_id
+        self.user_id = user_id
+        self.spent_at = spent_at
+        self.is_closed = is_closed
+        self.notes = notes
+        self.invoice_id = invoice_id
+        self.billable = billable
+        self.company_id = company_id
+        self.has_receipt = has_receipt
+        self.receipt_url = receipt_url
+        self.is_locked = is_locked
+        self.locked_reason = locked_reason
+        # TODO http://help.getharvest.com/api/expenses-api/expenses/add-update-expenses/#attach-receipt-image
 
 
 class Project(object):
@@ -273,7 +425,7 @@ class Project(object):
         :param cost_budget: Budget value for Total Project Fees projects.
         :param cost_budget_include_expenses: Option for budget of Total Project Fees projects to include tracked expenses.
         """
-        super(Project, self).__init__()
+        super().__init__()
         self.id = id
         self.client_id = client_id
         self.name = name
@@ -301,6 +453,70 @@ class Project(object):
         self.cost_budget_include_expenses = cost_budget_include_expenses
 
 
+class DayEntry(object):
+    """
+    
+    ::
+        "day_entry": {
+                "id": 367231666,
+                "notes": "Some notes.",
+                "spent_at": "2015-07-01",
+                "hours": 0.16,
+                "user_id": 508343,
+                "project_id": 3554414,
+                "task_id": 2086200,
+                "created_at": "2015-08-25T14:31:52Z",
+                "updated_at": "2015-08-25T14:47:02Z",
+                "adjustment_record": false,
+                "timer_started_at": "2015-08-25T14:47:02Z",
+                "is_closed": false,
+                "is_billed": false,
+                "hours_with_timer": 0.16
+            }
+    """
+
+    def __init__(self, id=None, notes=None, spent_at=None, hours=None,
+                 user_id=None, project_id=None, task_id=None, created_at=None,
+                 updated_at=None, adjustment_record=None,
+                 timer_started_at=None, is_closed=None, is_billed=None,
+                 hours_with_timer=None):
+        """
+
+        Started-At	Start timestamp of timer (if timestamps are enabled)
+        Ended-At	End timestamp of timer (if timestamps are enabled)
+
+        :param id: Time Entry ID
+        :param notes: Time entry notes
+        :param spent_at: Date of the time entry
+        :param hours: Number of (decimal time) hours tracked in this time entry
+        :param user_id: User ID that tracked this time entry
+        :param project_id: Project ID that the time entry is associated with
+        :param task_id:
+        :param created_at: Time (UTC) and date that entry was created
+        :param updated_at: Time (UTC) and date that entry was last updated
+        :param adjustment_record:
+        :param timer_started_at: Time (UTC) and date that timer was started (if tracking by duration)
+        :param is_closed: true if the time entry has been approved via Timesheet Approval (no API support), false if un-approved
+        :param is_billed: true if the time entry has been marked as invoiced, false if uninvoiced
+        :param hours_with_timer: Running timers will return the currently tracked value in decimal time
+        """
+        super().__init__()
+        self.id = id
+        self.notes = notes
+        self.spent_at = spent_at
+        self.hours = hours
+        self.user_id = user_id
+        self.project_id = project_id
+        self.task_id = task_id
+        self.created_at = created_at
+        self.updated_at = updated_at
+        self.adjustment_record = adjustment_record
+        self.timer_started_at = timer_started_at
+        self.is_closed = is_closed
+        self.is_billed = is_billed
+        self.hours_with_timer = hours_with_timer
+
+
 class TaskAssignment(object):
     """
 
@@ -325,7 +541,7 @@ class TaskAssignment(object):
     def __init__(self, id=None, project_id=None, task_id=None, billable=None,
                  deactivated=None, hourly_rate=None, budget=None,
                  created_at=None, updated_at=None, estimate=None):
-        super(TaskAssignment, self).__init__()
+        super().__init__()
         self.project_id = project_id
         self.task_id = task_id
         self.billable = billable
@@ -336,41 +552,6 @@ class TaskAssignment(object):
         self.created_at = created_at
         self.updated_at = updated_at
         self.estimate = estimate
-
-
-class User(object):
-    # TODO
-    # {
-    #     "user": {
-    #         "id": 508343,
-    #         "email": "user@example.com",
-    #         "created_at": "2013-04-30T20:28:12Z",
-    #         "is_admin": true,
-    #         "first_name": "Harvest",
-    #         "last_name": "User",
-    #         "timezone": "Eastern Time (US & Canada)",
-    #         "is_contractor": false,
-    #         "telephone": "",
-    #         "is_active": true,
-    #         "has_access_to_all_future_projects": true,
-    #         "default_hourly_rate": 0,
-    #         "department": "",
-    #         "wants_newsletter": true,
-    #         "updated_at": "2015-04-29T14:54:19Z",
-    #         "cost_rate": null,
-    #         "identity_account_id": 302900,
-    #         "identity_user_id": 20725
-    #     }
-    # }
-    pass
-
-
-class TimeSheet(object):
-    pass
-
-
-class Expense(object):
-    pass
 
 
 class Task(object):
@@ -403,3 +584,104 @@ class Task(object):
         self.is_default = is_default
         self.default_hourly_rate = default_hourly_rate
         self.deactivated = deactivated
+
+
+class Day(object):
+    """
+
+    ::
+
+        {
+            'day_entries': [],
+            'for_day': '2016-06-28',
+        }
+    """
+
+    def __init__(self, day_entries: typing.List[DayEntry] = None,
+                 for_day: str = None):
+        super().__init__()
+        self.day_entries = day_entries
+        self.for_day = for_day
+
+
+
+class User(object):
+    """
+
+    ::
+
+        "user": {
+            "id": 508343,
+            "email": "user@example.com",
+            "created_at": "2013-04-30T20:28:12Z",
+            "is_admin": true,
+            "first_name": "Harvest",
+            "last_name": "User",
+            "timezone": "Eastern Time (US & Canada)",
+            "is_contractor": false,
+            "telephone": "",
+            "is_active": true,
+            "has_access_to_all_future_projects": true,
+            "default_hourly_rate": 0,
+            "department": "",
+            "wants_newsletter": true,
+            "updated_at": "2015-04-29T14:54:19Z",
+            "cost_rate": null,
+            "identity_account_id": 302900,
+            "identity_user_id": 20725
+        }
+
+
+    """
+
+    def __init__(self, id=None, email=None, created_at=None, is_admin=None,
+                 first_name=None, last_name=None, timezone=None,
+                 is_contractor=None, telephone=None, is_active=None,
+                 has_access_to_all_future_projects=None,
+                 default_hourly_rate=None, department=None,
+                 wants_newsletter=None, updated_at=None, cost_rate=None,
+                 identity_account_id=None, identity_user_id=None):
+        """
+
+
+        :param id:
+        :param email:
+        :param created_at:
+        :param is_admin: Optional: To create a new admin user.
+        :param first_name:
+        :param last_name:
+        :param timezone: Optional: To set a timezone other than the account default.
+        :param is_contractor: Optional: To create a new contractor user.
+        :param telephone: Optional: Telephone number for user.
+        :param is_active: Optional: If the user is active, or archived (true, false)
+        :param has_access_to_all_future_projects: Optional: If true this user will automatically be assigned to all new projects.
+        :param default_hourly_rate: Optional: Default rate for the user in new projects, if no rate is specified.
+        :param department: Optional: Department for user.
+        :param wants_newsletter:
+        :param updated_at:
+        :param cost_rate: Optional: Cost (internal) rate for user.
+        :param identity_account_id:
+        :param identity_user_id:
+        """
+
+        super().__init__()
+        self.id = id
+        self.email = email
+        self.created_at = created_at
+        self.is_admin = is_admin
+        self.first_name = first_name
+        self.last_name = last_name
+        self.timezone = timezone
+        self.is_contractor = is_contractor
+        self.telephone = telephone
+        self.is_active = is_active
+        self.has_access_to_all_future_projects = has_access_to_all_future_projects
+        self.default_hourly_rate = default_hourly_rate
+        self.department = department
+        self.wants_newsletter = wants_newsletter
+        self.updated_at = updated_at
+        self.cost_rate = cost_rate
+        self.identity_account_id = identity_account_id
+        self.identity_user_id = identity_user_id
+
+

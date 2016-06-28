@@ -1,10 +1,13 @@
+import typing
+
+from statsbiblioteket.harvest.harvest_types import Task
 from statsbiblioteket.harvest.rest import Rest
 
 
 class TaskAssignments(Rest):
     # Task Assignment: Assigning tasks to projects
 
-    def get_all_tasks_from_project(self, project_id):
+    def get_all_tasks_from_project(self, project_id) -> typing.List[Task]:
         """
         GET ALL TASKS ASSIGNED TO A GIVEN PROJECT
         /projects/#{project_id}/task_assignments
@@ -20,7 +23,9 @@ class TaskAssignments(Rest):
         url = '/projects/{0}/task_assignments/{1}'.format(project_id, task_id)
         return self._get(url)
 
+
     def assign_task_to_project(self, project_id, **kwargs):
+        #TODO types
         """
         ASSIGN A TASK TO A PROJECT
         POST /projects/#{project_id}/task_assignments
@@ -29,6 +34,7 @@ class TaskAssignments(Rest):
         return self._post(url, kwargs)
 
     def create_task_to_project(self, project_id, **kwargs):
+        # TODO types
         """
         CREATE A NEW TASK AND ASSIGN IT TO A PROJECT
         POST /projects/#{project_id}/task_assignments/add_with_create_new_task
@@ -46,6 +52,7 @@ class TaskAssignments(Rest):
         return self._delete(url)
 
     def change_task_from_project(self, project_id, task_id, data, **kwargs):
+        # TODO types
         """
         CHANGING A TASK FOR A PROJECT
         PUT /projects/#{project_id}/task_assignments/#{task_assignment_id}

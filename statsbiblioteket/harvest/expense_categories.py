@@ -13,6 +13,7 @@ class ExpenseCategories(Rest):
         return self._get('/expense_categories')
 
     def create_expense_category(self, new_expense_category_id, **kwargs):
+        # TODO types
         """
         Create an expense category
         """
@@ -20,6 +21,7 @@ class ExpenseCategories(Rest):
         return self._post(url, data=kwargs)
 
     def update_expense_category(self, expense_category_id, **kwargs):
+        # TODO types
         """
         Update an existing expense category
         """

@@ -26,6 +26,7 @@ class Contacts(Rest):
         return self._get(url)
 
     def create_contact(self, new_contact_id, fname, lname, **kwargs):
+        # TODO types
         """
         Create a new contact
         http://help.getharvest.com/api/clients-api/clients/using-the-client-contacts-api/#create-a-new-client-contact
@@ -46,6 +47,8 @@ class Contacts(Rest):
         return self._get(url,params=params)
 
     def update_contact(self, contact_id, **kwargs):
+        # TODO types
+
         """
         Update a contact
         http://help.getharvest.com/api/clients-api/clients/using-the-client-contacts-api/#update-a-client-contact

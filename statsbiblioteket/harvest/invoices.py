@@ -47,17 +47,17 @@ class Invoices(Rest):
         url = '/invoices/{0}'.format(invoice_id)
         return self._delete(url)
 
-    def update_invoice(self, invoice_id, data):
+    def update_invoice(self, invoice_id, invoice:Invoice):
         """
         Update an existing invoice by `invoice_id`
         http://help.getharvest.com/api/invoices-api/invoices/show-invoices/#update-existing-invoice
         """
         url = '/invoices/{0}'.format(invoice_id)
-        return self._put(url, data)
+        return self._put(url, data=invoice)
 
-    def add_invoice(self, data):
+    def add_invoice(self, invoice:Invoice):
         """
         Create a new invoice
         http://help.getharvest.com/api/invoices-api/invoices/create-an-invoice/
         """
-        return self._post('/invoices', data)
+        return self._post('/invoices', data=invoice)

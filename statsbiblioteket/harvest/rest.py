@@ -4,11 +4,13 @@ import os
 import sys
 from json import JSONEncoder
 
+import inflection as inflection
 import requests
 from requests.packages.urllib3.exceptions import HTTPError
 from requests_oauthlib import OAuth2Session
 
 from statsbiblioteket.harvest import harvest_types
+from statsbiblioteket.harvest.harvest_types import TimeSheet, Day
 
 HARVEST_STATUS_URL = 'http://www.harveststatus.com/api/v2/status.json'
 
@@ -76,7 +78,7 @@ class Rest(object):
         url = '{uri}{path}'.format(uri=self.uri, path=path)
 
         jsonData = json.dumps(data, cls=ObjectEncoder)
-        print(jsonData)
+        #print(jsonData)
         resp = self._session.request(method=method,
                                      url=url,
                                      data=jsonData,
@@ -109,20 +111,47 @@ class Rest(object):
             return {}
 
 
+def isOurs(d):
+    oneValue = len(d.keys()) == 1
+    isDay = 'for_day' in d and 'day_entries' in d
+    return oneValue or isDay
+
+
+def getOurName(d):
+    oneValue = len(d.keys()) == 1
+    if oneValue:
+        key = list(d.keys())[0]
+        className = inflection.camelize(key)
+        return className,d[key]
+
+    if 'for_day' in d and 'day_entries' in d: #Special handling for Day
+        day_entries = d['day_entries']
+        d['day_entries'] = [wrap(TimeSheet.__name__, day_entry) for day_entry
+                            in day_entries or []]
+        return Day.__name__, d
+    return None,None
+
 def json_type_hook(d):
     try:
-        if len(d.keys()) == 1:
-            key = list(d.keys())[0]
-            name___ = sys.modules[harvest_types.__name__]
-            className = key.title()
-            class_ = getattr(name___, className)
-            object_ = class_.__new__(class_)
-            object_.__dict__ = d[key]
-            #object_.__dict__.update((k, v) for k, v in d[key] if v is not None)
-            return object_
+        className,values = getOurName(d)
+
+        if className:
+            return wrap(className, values)
+
     except:
-        pass
+         e = sys.exc_info()[0]
+         print(e)
+         pass
     return d
+
+
+def wrap(className, values):
+    name___ = sys.modules[harvest_types.__name__]
+    class_ = getattr(name___, className)
+    object_ = class_.__new__(class_)
+    object_.__dict__ = values
+    # object_.__dict__.update((k, v) for k, v in d[key] if v is not None)
+    return object_
 
 
 class ObjectEncoder(JSONEncoder):
@@ -132,11 +161,3 @@ class ObjectEncoder(JSONEncoder):
         fields.update((k, v) for k, v in  o.__dict__.items() if v is not None)
         encoded = {elementName: fields}
         return encoded
-
-
-
-#TODO Projects
-
-#TODO Tasks
-
-#TODO time entries

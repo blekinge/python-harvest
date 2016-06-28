@@ -79,6 +79,10 @@ class TestHarvest():
         print(users)
         pass
 
+    def test_timetracking(self,harvest):
+        today = harvest.today
+        print(today)
+
     # def test_add(self, harvest):
     #     today = harvest.today
     #     start = time()

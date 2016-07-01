@@ -1,7 +1,12 @@
+import json
 import typing
 
 
-class Client(object):
+class HarvestType(object):
+    pass
+
+
+class Client(HarvestType):
     """
     Data class for Harvest Users.
 
@@ -60,8 +65,7 @@ class Client(object):
         self.default_invoice_timeframe = default_invoice_timeframe
         self.last_invoice_kind = last_invoice_kind
 
-
-class Contact(object):
+class Contact(HarvestType):
     """
     Data class for Harvest Contacts.
 
@@ -104,7 +108,7 @@ class Contact(object):
         self.created_at = created_at
         self.updated_at = updated_at
 
-class Invoice(object):
+class Invoice(HarvestType):
     """
 
     ::
@@ -244,8 +248,7 @@ class Invoice(object):
         self.expense_period_start = expense_period_start
         self.expense_period_end = expense_period_end
 
-
-class ExpenseCategory(object):
+class ExpenseCategory(HarvestType):
     """
 
     ::
@@ -272,8 +275,7 @@ class ExpenseCategory(object):
         self.updated_at = updated_at
         self.deactivated = deactivated
 
-
-class Expense(object):
+class Expense(HarvestType):
     """
 
     ::
@@ -349,8 +351,7 @@ class Expense(object):
         self.locked_reason = locked_reason
         # TODO http://help.getharvest.com/api/expenses-api/expenses/add-update-expenses/#attach-receipt-image
 
-
-class Project(object):
+class Project(HarvestType):
     """
     ::
 
@@ -452,8 +453,7 @@ class Project(object):
         self.cost_budget = cost_budget
         self.cost_budget_include_expenses = cost_budget_include_expenses
 
-
-class DayEntry(object):
+class DayEntry(HarvestType):
     """
     
     ::
@@ -516,8 +516,7 @@ class DayEntry(object):
         self.is_billed = is_billed
         self.hours_with_timer = hours_with_timer
 
-
-class TaskAssignment(object):
+class TaskAssignment(HarvestType):
     """
 
     ::
@@ -553,8 +552,7 @@ class TaskAssignment(object):
         self.updated_at = updated_at
         self.estimate = estimate
 
-
-class Task(object):
+class Task(HarvestType):
     """
         ::
 
@@ -585,8 +583,7 @@ class Task(object):
         self.default_hourly_rate = default_hourly_rate
         self.deactivated = deactivated
 
-
-class Day(object):
+class Day(HarvestType):
     """
 
     ::
@@ -603,9 +600,7 @@ class Day(object):
         self.day_entries = day_entries
         self.for_day = for_day
 
-
-
-class User(object):
+class User(HarvestType):
     """
 
     ::

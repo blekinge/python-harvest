@@ -1,6 +1,6 @@
 import typing
 
-from statsbiblioteket.harvest.harvest_types import Expense_Category
+from statsbiblioteket.harvest.harvest_types import ExpenseCategory
 from statsbiblioteket.harvest.rest import Rest
 
 
@@ -8,7 +8,7 @@ class ExpenseCategories(Rest):
     # Expense Categories
 
     @property
-    def expense_categories(self) -> typing.List[Expense_Category]:
+    def expense_categories(self) -> typing.List[ExpenseCategory]:
         """ expense categories property """
         return self._get('/expense_categories')
 
@@ -28,7 +28,7 @@ class ExpenseCategories(Rest):
         url = '/expense_categories/{0}'.format(expense_category_id)
         return self._put(url, data=kwargs)
 
-    def get_expense_category(self, expense_category_id) -> Expense_Category:
+    def get_expense_category(self, expense_category_id) -> ExpenseCategory:
         """
         Get an expense category by expense_category_id
         """

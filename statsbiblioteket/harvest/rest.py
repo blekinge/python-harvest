@@ -10,7 +10,7 @@ from requests.packages.urllib3.exceptions import HTTPError
 from requests_oauthlib import OAuth2Session
 
 from statsbiblioteket.harvest import harvest_types
-from statsbiblioteket.harvest.harvest_types import TimeSheet, Day
+from statsbiblioteket.harvest.harvest_types import DayEntry, Day
 
 HARVEST_STATUS_URL = 'http://www.harveststatus.com/api/v2/status.json'
 

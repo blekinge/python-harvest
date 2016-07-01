@@ -1,6 +1,6 @@
 import typing
 
-from statsbiblioteket.harvest.harvest_types import Project, TimeSheet, Expense
+from statsbiblioteket.harvest.harvest_types import Project, DayEntry, Expense
 from statsbiblioteket.harvest.rest import Rest
 
 
@@ -27,7 +27,7 @@ class Projects(Rest):
         return self._get(url, params=params)
 
     def timesheets_for_project(self, project_id, start_date, end_date) -> \
-    typing.List[TimeSheet]:
+    typing.List[DayEntry]:
         """
         Get the timesheets for a project
         """

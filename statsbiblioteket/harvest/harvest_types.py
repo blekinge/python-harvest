@@ -89,7 +89,10 @@ class User(HarvestDBType):
 
     signup_redirection_cookie = Column(String, nullable=True)
 
-    day_entries = relationship('DayEntry', back_populates="user")  # type: typing.List[DayEntry]
+    day_entries = relationship('DayEntry',
+                               back_populates="user")  # type: typing.List[DayEntry]
+    expenses = relationship('Expense', back_populates="user")
+    invoices = relationship('Invoice', back_populates='creator')
 
     def __str__(self, *args, **kwargs):
         return '{firstName} {lastName} <{email}>'.format(
@@ -177,10 +180,13 @@ class Project(HarvestDBType):
     cost_budget_include_expenses = Column(Boolean, nullable=True)
     """Option for budget of Total Project Fees projects to include tracked expenses."""
 
-    task_assignments = relationship('TaskAssignment', back_populates="project")  # type: typing.List[TaskAssignment]
+    task_assignments = relationship('TaskAssignment',
+                                    back_populates="project")  # type: typing.List[TaskAssignment]
     day_entries = relationship('DayEntry',
                                back_populates="project")  # type: typing.List[DayEntry]
+    expenses = relationship('Expense', back_populates="Project")
 
+    client = relationship('Client',back_populates='projects')
 
     def __str__(self, *args, **kwargs):
         return self.name
@@ -232,29 +238,10 @@ class Client(HarvestDBType):
     default_invoice_timeframe = Column(String, nullable=True)
     last_invoice_kind = Column(String, nullable=True)
 
-    def __init__(self, name, id=None, active=None, currency=None,
-                 highrise_id=None, cache_version=None, updated_at=None,
-                 created_at=None, currency_symbol=None, details=None,
-                 default_invoice_timeframe=None, last_invoice_kind=None):
-        """
-
-
-        """
-        super().__init__()
-        self.id = id
-        self.name = name
-        self.active = active
-        self.currency = currency
-        self.highrise_id = highrise_id
-        self.cache_version = cache_version
-        self.updated_at = updated_at
-        self.created_at = created_at
-        self.currency_symbol = currency_symbol
-        self.details = details
-        self.default_invoice_timeframe = default_invoice_timeframe
-        self.last_invoice_kind = last_invoice_kind
-
-
+    contacts = relationship('Contact',
+                            back_populates="client")  # type: typing.List[Contact]
+    invoices = relationship('Invoice', back_populates='client')
+    projects = relationship('Project', back_populates='client')
 
 
 class DayEntry(HarvestDBType):
@@ -280,7 +267,7 @@ class DayEntry(HarvestDBType):
     """
 
     __tablename__ = 'day_entries'
-    id = Column(Integer,primary_key=True)
+    id = Column(Integer, primary_key=True)
     """Time Entry ID"""
     notes = Column(String)
     """Time entry notes"""
@@ -290,9 +277,16 @@ class DayEntry(HarvestDBType):
     """Number of (decimal time) hours tracked in this time entry"""
     user_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
     """User ID that tracked this time entry"""
+    user = relationship('User', back_populates="day_entries")  # type: User
+
     project_id = Column(Integer, ForeignKey('projects.id'), primary_key=True)
     """Project ID that the time entry is associated with"""
+    project = relationship('Project',
+                           back_populates="day_entries")  # type: Project
+
     task_id = Column(Integer, ForeignKey('tasks.id'), primary_key=True)
+    task = relationship('Task', back_populates="day_entries")  # type: Task
+
     created_at = Column(String)
     """Time (UTC) and date that entry was created"""
     updated_at = Column(String)
@@ -315,10 +309,6 @@ class DayEntry(HarvestDBType):
 
     """
 
-
-    task = relationship('Task', back_populates="day_entries") # type: Task
-    project = relationship('Project', back_populates="day_entries") # type: Project
-    user = relationship('User', back_populates="day_entries") # type: User
 
 
 class TaskAssignment(HarvestDBType):
@@ -349,8 +339,10 @@ class TaskAssignment(HarvestDBType):
 
     task_id = Column(Integer, ForeignKey('tasks.id'), primary_key=True)
 
-    task = relationship('Task', back_populates="task_assignments") # type: Task
-    project = relationship('Project', back_populates="task_assignments") # type: Project
+    task = relationship('Task',
+                        back_populates="task_assignments")  # type: Task
+    project = relationship('Project',
+                           back_populates="task_assignments")  # type: Project
 
     billable = Column(Boolean)
 
@@ -394,7 +386,7 @@ class Task(HarvestDBType):
     default_hourly_rate = Column(Integer)
     deactivated = Column(Boolean)
 
-    task_assignments = relationship('TaskAssignment',back_populates="task")
+    task_assignments = relationship('TaskAssignment', back_populates="task")
     day_entries = relationship('DayEntry',
                                back_populates="task")  # type: typing.List[DayEntry]
 
@@ -420,7 +412,7 @@ class Day(HarvestType):
         self.for_day = for_day
 
 
-class Contact(HarvestType):
+class Contact(HarvestDBType):
     """
     Data class for Harvest Contacts.
 
@@ -443,25 +435,21 @@ class Contact(HarvestType):
         }
 
     .. seealso:: http://help.getharvest.com/api/clients-api/clients/using-the-client-contacts-api/
-
     """
+    __tablename__ = 'contacts'
+    id = Column(Integer, primary_key=True)
+    client_id = Column(Integer, ForeignKey('clients.id'))
+    first_name = Column(String)
+    last_name = Column(String)
+    email = Column(String)
+    phone_office = Column(String)
+    phone_mobile = Column(String)
+    fax = Column(String)
+    title = Column(String)
+    created_at = Column(String)
+    updated_at = Column(String)
 
-    def __init__(self, id=None, client_id=None, first_name=None,
-                 last_name=None, email=None, phone_office=None,
-                 phone_mobile=None, fax=None, title=None, created_at=None,
-                 updated_at=None):
-        super().__init__()
-        self.id = id
-        self.client_id = client_id
-        self.first_name = first_name
-        self.last_name = last_name
-        self.email = email
-        self.phone_office = phone_office
-        self.phone_mobile = phone_mobile
-        self.fax = fax
-        self.title = title
-        self.created_at = created_at
-        self.updated_at = updated_at
+    client = relationship('Client', back_populates="contacts")  # type: Client
 
     def __str__(self, *args, **kwargs):
         return '{firstName} {lastName} <{email}>'.format(
@@ -469,7 +457,7 @@ class Contact(HarvestType):
                 email=self.email)
 
 
-class Invoice(HarvestType):
+class Invoice(HarvestDBType):
     """
 
     ::
@@ -505,59 +493,7 @@ class Invoice(HarvestType):
             "created_by_id": 508343,
             "csv_line_items": "kind,description,quantity,unit_price,amount,taxed,taxed2,project_id\\nProduct,A description,1.00,100.00,100.0,false,false,\\n"
         }
-    """
 
-    def __init__(self, client_id=None, period_start=None, period_end=None,
-                 number=None, issued_at=None, due_at=None, amount=None,
-                 currency=None, state=None, notes=None, purchase_order=None,
-                 due_amount=None, due_at_human_format=None, created_at=None,
-                 updated_at=None, tax=None, tax_amount=None, subject=None,
-                 recurring_invoice_id=None, tax2=None, tax2_amount=None,
-                 client_key=None, estimate_id=None, discount=None,
-                 discount_amount=None, retainer_id=None, created_by_id=None,
-                 csv_line_items=None, kind=None, projects_to_invoice=None,
-                 import_hours=None, import_expense=None,
-                 expense_period_start=None, expense_period_end=None,
-                 expense_summary_kind=None):
-        """
-        User Editable Parameters
-            :param client_id: A valid client-id
-            :param period_start: Date for included project hours. (Example: 2015-04-22)
-            :param period_end: End date for included project hours. (Example: 2015-05-22)
-            :param number: Optional invoice number. If no value is set, the number will be automatically generated.
-            :param issued_at: Invoice creation date. (Example: 2015-04-22)
-            :param due_at:
-            :param amount:
-            :param currency: A valid currency format (Example: United States Dollar - USD). Optional, and will default to the client currency if no value is passed. Click here for a list of supported currencies
-            :param notes: Optional invoice notes.
-            :param purchase_order: Optional purchase order number.
-            :param due_amount:
-            :param due_at_human_format: Invoice due date. Acceptable formats are NET N where N is the number of days until the invoice is due.
-            :param tax: First tax rate for created invoice. Optional. Account default used otherwise.
-            :param tax_amount:
-            :param subject: Optional invoice subject.
-            :param tax2: Second tax rate for created invoice. Optional. Account default used otherwise.
-            :param tax2_amount:
-            :param discount: Optional value to discount invoice total.
-            :param discount_amount:
-            :param csv_line_items: Used to create line items in free-form invoices. Entries should have their entries enclosed in quotes when they contain extra commas. This is especially important if you are using a number format which uses commas as the decimal separator.
-            :param kind: Invoice type. Options: free-form, project, task, people, detailed. (See Invoice Types)
-            :param projects_to_invoice: Comma separated project IDs to gather data from, unused for free-form invoices.
-            :param import_hours: Hours to import into invoices. Options: all(import all hours), yes (import hours using period-start, period-end), no (do not import hours).
-            :param import_expense: Expenses to import into invoices. Options: all(import all expenses), yes (import expenses using expense-period-start, expense-period-end), no (do not import expenses).
-            :param expense_period_start: Date for included project expenses. (Example: 2015-04-22)
-            :param expense_period_end: End date for included project expenses. (Example: 2015-05-22)
-            :param expense_summary_kind: Summary type for expenses in an invoice. Options: project, people, category, detailed.
-
-        Parameters Generated By Harvest
-            :param client_key:	Value to generate URL to client dashboard. (Example: https://YOURACCOUNT.harvestapp.com/clients/invoices/{CLIENTKEY})
-            :param estimate_id:	This value will exist if an estimate was converted into an invoice.
-            :param retainer_id: This value will exist if the invoice was created from a retainer.
-            :param recurring_invoice_id:	This value will exist if the invoice is recurring, and automatically generated.
-            :param created_by_id:   User ID of the invoice creator.
-            :param updated_at:	    Date invoice was last updated. (Example: 2015-04-09T12:07:56Z)
-            :param created_at:      Date invoice was created. (Example: 2015-04-09T12:07:56Z)
-            :param state:           Updated when invoice is created, sent, paid, late, or written off. Options: draft, paid, late, sent, written-off.
 
 
         Invoice Types
@@ -567,49 +503,87 @@ class Invoice(HarvestType):
             task        Gathers hours & expenses from Harvest grouped by task.
             people      Gathers hours & expenses from Harvest grouped by person.
             detailed    Uses a line item for each hour & expense entry, including detailed notes.
+    """
 
-        """
-        super().__init__()
-        self.id = id
-        self.client_id = client_id
-        self.period_start = period_start
-        self.period_end = period_end
-        self.number = number
-        self.issued_at = issued_at
-        self.due_at = due_at
-        self.amount = amount
-        self.currency = currency
-        self.state = state
-        self.notes = notes
-        self.purchase_order = purchase_order
-        self.due_amount = due_amount
-        self.due_at_human_format = due_at_human_format
-        self.created_at = created_at
-        self.updated_at = updated_at
-        self.tax = tax
-        self.tax_amount = tax_amount
-        self.subject = subject
-        self.recurring_invoice_id = recurring_invoice_id
-        self.tax2 = tax2
-        self.tax2_amount = tax2_amount
-        self.client_key = client_key
-        self.estimate_id = estimate_id
-        self.discount = discount
-        self.discount_amount = discount_amount
-        self.retainer_id = retainer_id
-        self.created_by_id = created_by_id
-        self.csv_line_items = csv_line_items
-        self.expense_summary_kind = expense_summary_kind
-        self.kind = kind
-        self.projects_to_invoice = projects_to_invoice
-        self.import_hours = import_hours
-        self.import_expense = import_expense
-        self.period_start = period_start
-        self.period_end = period_end
-        self.expense_period_start = expense_period_start
-        self.expense_period_end = expense_period_end
+    __tablename__ = 'invoices'
+    # Parameters Generated By Harvest
+    id = Column(Integer, primary_key=True)
+    client_key = Column(String)
+    """Value to generate URL to client dashboard. (Example: https://YOURACCOUNT.harvestapp.com/clients/invoices/{CLIENTKEY})"""
+    estimate_id = Column(String, nullable=True)
+    """This value will exist if an estimate was converted into an invoice."""
+    retainer_id = Column(Integer, nullable=True)
+    """This value will exist if the invoice was created from a retainer."""
+    recurring_invoice_id = Column(String, nullable=True)
+    """This value will exist if the invoice is recurring, and automatically generated."""
 
-class ExpenseCategory(HarvestType):
+    created_by_id = Column(Integer, ForeignKey('users.id'))
+    """User ID of the invoice creator."""
+    creator = relationship('User', back_populates='invoices')
+
+    state = Column(String)
+    """Updated when invoice is created, sent, paid, late, or written off. Options: draft, paid, late, sent, written-off."""
+    created_at = Column(String)
+    """Date invoice was created. (Example: 2015-04-09T12:07:56Z)"""
+    updated_at = Column(String)
+    """Date invoice was last updated. (Example: 2015-04-09T12:07:56Z)"""
+
+    # User Editable Parameters
+    client_id = Column(Integer, ForeignKey('clients.id'))
+    """A valid client-id"""
+    client = relationship('Client', back_populates='invoices')
+
+    period_start = Column(String)
+    """Date for included project hours. (Example: 2015-04-22)"""
+    period_end = Column(String)
+    """End date for included project hours. (Example: 2015-05-22)"""
+    number = Column(String, nullable=True)
+    """Optional invoice number. If no value is set, the number will be automatically generated."""
+    issued_at = Column(String)
+    """ Invoice creation date. (Example: 2015-04-22)"""
+    due_at = Column(String)
+    amount = Column(Integer)
+    currency = Column(String)
+    """A valid currency format (Example: United States Dollar - USD). Optional, and will default to the client currency if no value is passed. Click here for a list of supported currencies"""
+    notes = Column(String, nullable=True)
+    """Optional invoice notes."""
+    purchase_order = Column(String, nullable=True)
+    """Optional purchase order number."""
+    due_amount = Column(Integer)
+    due_at_human_format = Column(String)
+    """Invoice due date. Acceptable formats are NET N where N is the number of days until the invoice is due."""
+    tax = Column(String, nullable=True)
+    """First tax rate for created invoice. Optional. Account default used otherwise."""
+    tax_amount = Column(Integer)
+    subject = Column(String)
+    """Optional invoice subject."""
+    tax2 = Column(String, nullable=True)
+    """Second tax rate for created invoice. Optional. Account default used otherwise."""
+    tax2_amount = Column(Integer)
+    discount = Column(String, nullable=True)
+    """Optional value to discount invoice total."""
+    discount_amount = Column(Integer)
+    csv_line_items = Column(String)
+    """Used to create line items in free-form invoices. Entries should have their entries enclosed in quotes when they contain extra commas. This is especially important if you are using a number format which uses commas as the decimal separator."""
+    expense_summary_kind = Column(String)
+    """Summary type for expenses in an invoice. Options: project, people, category, detailed."""
+    kind = Column(String)
+    """Invoice type. Options: free-form, project, task, people, detailed. (See Invoice Types)"""
+    projects_to_invoice = Column(String)
+    """Comma separated project IDs to gather data from, unused for free-form invoices."""
+    import_hours = Column(String)
+    """Hours to import into invoices. Options: all(import all hours), yes (import hours using period-start, period-end), no (do not import hours)."""
+    import_expense = Column(String)
+    """Expenses to import into invoices. Options: all(import all expenses), yes (import expenses using expense-period-start, expense-period-end), no (do not import expenses)."""
+    expense_period_start = Column(String)
+    """Date for included project expenses. (Example: 2015-04-22)"""
+    expense_period_end = Column(String)
+    """End date for included project expenses. (Example: 2015-05-22)"""
+
+    expense = relationship('Expense', back_populates="invoice")
+
+
+class ExpenseCategory(HarvestDBType):
     """
 
     ::
@@ -624,19 +598,20 @@ class ExpenseCategory(HarvestType):
                 "deactivated": false
         }
     """
+    __tablename__ = 'expense_categories'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    unit_name = Column(String, nullable=True)
+    unit_price = Column(String, nullable=True)
+    created_at = Column(String)
+    updated_at = Column(String)
+    deactivated = Column(Boolean)
 
-    def __init__(self, id=None, name=None, unit_name=None, unit_price=None,
-                 created_at=None, updated_at=None, deactivated=None):
-        super().__init__()
-        self.id = id
-        self.name = name
-        self.unit_name = unit_name
-        self.unit_price = unit_price
-        self.created_at = created_at
-        self.updated_at = updated_at
-        self.deactivated = deactivated
+    expenses = relationship('Expense',
+                                    back_populates='expense_category')
 
-class Expense(HarvestType):
+
+class Expense(HarvestDBType):
     """
 
     ::
@@ -664,50 +639,41 @@ class Expense(HarvestType):
 
     """
 
-    def __init__(self, id=None, notes: str = None, total_cost: int = None,
-                 project_id=None, expense_category_id=None,
-                 billable: bool = None, spent_at=None, units: int = None,
-                 created_at=None, updated_at=None, user_id=None,
-                 is_closed=None, invoice_id=None, company_id=None,
-                 has_receipt=None, receipt_url=None, is_locked=None,
-                 locked_reason=None):
-        """
-        :param id:
-        :param notes: Expense entry notes
-        :param total_cost: integer value for the expense entry
-        :param project_id: Valid and existing project ID
-        :param expense_category_id: Valid and existing expense category ID
-        :param billable: Options: true, false. Note: Only expenses that are billable can be invoiced.
-        :param spent_at: Date for expense entry
-        :param units: integer value for use with an expense calculated by unit price (Example: Mileage)
-        :param created_at:
-        :param updated_at:
-        :param user_id:
-        :param is_closed:
-        :param invoice_id:
-        :param company_id:
-        :param has_receipt:
-        :param receipt_url:
-        :param is_locked:
-        :param locked_reason:
-        """
-        super().__init__()
-        self.id = id
-        self.total_cost = total_cost
-        self.units = units
-        self.created_at = created_at
-        self.updated_at = updated_at
-        self.project_id = project_id
-        self.expense_category_id = expense_category_id
-        self.user_id = user_id
-        self.spent_at = spent_at
-        self.is_closed = is_closed
-        self.notes = notes
-        self.invoice_id = invoice_id
-        self.billable = billable
-        self.company_id = company_id
-        self.has_receipt = has_receipt
-        self.receipt_url = receipt_url
-        self.is_locked = is_locked
-        self.locked_reason = locked_reason
-        # TODO http://help.getharvest.com/api/expenses-api/expenses/add-update-expenses/#attach-receipt-image
+    __tablename__ = 'expense'
+    id = Column(Integer, primary_key=True)
+    total_cost = Column(Integer)
+    """integer value for the expense entry"""
+    units = Column(Integer)
+    """integer value for use with an expense calculated by unit price (Example: Mileage)"""
+    created_at = Column(String)
+    updated_at = Column(String)
+
+    project_id = Column(Integer, ForeignKey('projects.id'))
+    """Valid and existing project ID"""
+    project = relationship('Project', back_populates="expenses")
+
+    expense_category_id = Column(Integer, ForeignKey('expense_categories.id'))
+    """Valid and existing expense category ID"""
+    expense_category = relationship('ExpenseCategory',back_populates='expenses')
+
+    user_id = Column(Integer, ForeignKey('users.id'))
+    user = relationship('User', back_populates="expenses")
+
+    spent_at = Column(String)
+    """Date for expense entry"""
+    is_closed = Column(Boolean)
+    notes = Column(String)
+    """Expense entry notes"""
+
+    invoice_id = Column(Integer, ForeignKey('invoices.id'))
+    invoice = relationship('Invoice', back_populates="expense")
+
+    billable = Column(Boolean)
+    """Options: true, false. Note: Only expenses that are billable can be invoiced."""
+    company_id = Column(Integer)  # TODO foreign key
+    has_receipt = Column(Boolean)
+    receipt_url = Column(String)
+    is_locked = Column(Boolean)
+    locked_reason = Column(String, nullable=True)
+
+

@@ -1,17 +1,11 @@
 import json
 import os
-
 import sys
-from pprint import pprint
-
-import typing
 
 from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
-from statsbiblioteket.harvest.harvest_types import User, Project, \
-    TaskAssignment, DayEntry, HarvestDBType
-
-from sqlalchemy.orm import sessionmaker, Session
+from statsbiblioteket.harvest.harvest_types import User, Project, HarvestDBType
 
 sys.path.insert(0, sys.path[0] + "/..")
 
@@ -28,9 +22,8 @@ def harvestApi():
 
 def readDB():
     from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker, Session
-    from statsbiblioteket.harvest.harvest_types import User, Project, \
-        TaskAssignment, DayEntry, HarvestDBType
+    from sqlalchemy.orm import sessionmaker
+    from statsbiblioteket.harvest.harvest_types import Project
 
     engine = create_engine('sqlite:///data.db', echo=True)
 

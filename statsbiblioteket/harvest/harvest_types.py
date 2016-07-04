@@ -1,12 +1,192 @@
-import json
 import typing
+
+# From http://docs.sqlalchemy.org/en/rel_1_0/orm/tutorial.html
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey
+from sqlalchemy.orm import relationship
 
 
 class HarvestType(object):
     pass
 
 
-class Client(HarvestType):
+HarvestDBType = declarative_base()
+
+
+class User(HarvestDBType):
+    """
+    ::
+
+        "user": {
+            "id": 508343,
+            "email": "user@example.com",
+            "created_at": "2013-04-30T20:28:12Z",
+            "is_admin": true,
+            "first_name": "Harvest",
+            "last_name": "User",
+            "timezone": "Eastern Time (US & Canada)",
+            "is_contractor": false,
+            "telephone": "",
+            "is_active": true,
+            "has_access_to_all_future_projects": true,
+            "default_hourly_rate": 0,
+            "department": "",
+            "wants_newsletter": true,
+            "updated_at": "2015-04-29T14:54:19Z",
+            "cost_rate": null,
+            "identity_account_id": 302900,
+            "identity_user_id": 20725
+        }
+
+    """
+
+    __tablename__ = 'users'
+
+    id = Column(Integer, primary_key=True)
+
+    first_name = Column(String)
+
+    last_name = Column(String)
+
+    email = Column(String)
+
+    created_at = Column(String)
+
+    is_admin = Column(Boolean, nullable=True)
+    """Optional: To create a new admin user"""
+
+    timezone = Column(String, nullable=True)
+    """Optional: To set a timezone other than the account default."""
+
+    is_contractor = Column(Boolean, nullable=True)
+    """Optional: To create a new contractor user."""
+
+    telephone = Column(String, nullable=True)
+    """Optional: Telephone number for user."""
+
+    is_active = Column(Boolean, nullable=True)
+    """Optional: If the user is active, or archived (true, false)"""
+
+    has_access_to_all_future_projects = Column(Boolean, nullable=True)
+    """Optional: If true this user will automatically be assigned to all new projects."""
+
+    default_hourly_rate = Column(Integer, nullable=True)
+    """Optional: Default rate for the user in new projects, if no rate is specified."""
+
+    department = Column(String, nullable=True)
+    """Optional: Department for user."""
+
+    wants_newsletter = Column(Boolean, nullable=True)
+
+    updated_at = Column(String)
+
+    cost_rate = Column(String, nullable=True)
+    """Optional: Cost (internal) rate for user."""
+
+    identity_account_id = Column(Integer, nullable=True)
+
+    identity_user_id = Column(Integer, nullable=True)
+
+    signup_redirection_cookie = Column(String, nullable=True)
+
+    day_entries = relationship('DayEntry', back_populates="user")  # type: typing.List[DayEntry]
+
+    def __str__(self, *args, **kwargs):
+        return '{firstName} {lastName} <{email}>'.format(
+                firstName=self.first_name, lastName=self.last_name,
+                email=self.email)
+
+
+class Project(HarvestDBType):
+    """
+    ::
+
+        "project": {
+            "id": 3554414,
+            "client_id": 3398386,
+            "name": "Internal",
+            "code": "Testing",
+            "active": true,
+            "billable": true,
+            "bill_by": "People",
+            "hourly_rate": 100,
+            "budget": 100,
+            "budget_by": "project",
+            "notify_when_over_budget": true,
+            "over_budget_notification_percentage": 80,
+            "over_budget_notified_at": null,
+            "show_budget_to_all": true,
+            "created_at": "2013-04-30T20:28:12Z",
+            "updated_at": "2015-04-15T15:44:17Z",
+            "starts_on": "2013-04-30",
+            "ends_on": "2015-06-01",
+            "estimate": 100,
+            "estimate_by": "project",
+            "hint_earliest_record_at": "2013-04-30",
+            "hint_latest_record_at": "2014-12-09",
+            "notes": "Some project notes go here!",
+            "cost_budget": null,
+            "cost_budget_include_expenses": false
+        }
+
+    .. seealso:: http://help.getharvest.com/api/projects-api/projects/create-and-show-projects/
+    """
+    __tablename__ = 'projects'
+
+    id = Column(Integer, primary_key=True)
+    """Project ID"""
+    client_id = Column(Integer, ForeignKey('clients.id'))
+    """Client ID for project"""
+    name = Column(String)
+    """Project name"""
+    code = Column(String)
+    """Project code"""
+    active = Column(Boolean)
+    """Whether the project is active or archived. Options: true, false."""
+    billable = Column(Boolean, nullable=True)
+    """Whether the project is billable or not billable. Options: true, false."""
+    bill_by = Column(String)
+    """The method by which the project is invoiced. Options: "project", "tasks", "people", or "none"."""
+    hourly_rate = Column(Integer, nullable=True)
+    """Rate for projects billed by Project Hourly Rate"""
+    budget = Column(Integer, nullable=True)
+    """Budget value for the project."""
+    budget_by = Column(String)
+    """The method by which the project is budgeted. Options: "project" (Hours Per Project), "project_cost" (Total Project Fees), "task" (Hours Per Task), "person" (Hours Per Person), "none" (No Budget)."""
+    notify_when_over_budget = Column(Boolean)
+    """Option to send notification emails when a project reaches the budget threshold set in Over-Budget-Notification-Percentage Options: true, false."""
+    over_budget_notification_percentage = Column(Integer)
+    """Percentage value to trigger over budget email alerts."""
+    over_budget_notified_at = Column(String, nullable=True)
+    """Date of last over budget notification. If none have been sent, this will be nil."""
+    show_budget_to_all = Column(Boolean)
+    """Option to show project budget to all employees. Does not apply to Total Project Fee projects. Options: true, false."""
+    created_at = Column(String)
+    """Date of earliest record for this project. Updated every 24 hours."""
+    updated_at = Column(String)
+    """Date of most recent record for this project. Updated every 24 hours."""
+    starts_on = Column(String, nullable=True)
+    ends_on = Column(String, nullable=True)
+    estimate = Column(Integer, nullable=True)
+    estimate_by = Column(String)
+    hint_earliest_record_at = Column(String)
+    hint_latest_record_at = Column(String)
+    notes = Column(String)
+    cost_budget = Column(String, nullable=True)
+    """Budget value for Total Project Fees projects."""
+    cost_budget_include_expenses = Column(Boolean, nullable=True)
+    """Option for budget of Total Project Fees projects to include tracked expenses."""
+
+    task_assignments = relationship('TaskAssignment', back_populates="project")  # type: typing.List[TaskAssignment]
+    day_entries = relationship('DayEntry',
+                               back_populates="project")  # type: typing.List[DayEntry]
+
+
+    def __str__(self, *args, **kwargs):
+        return self.name
+
+
+class Client(HarvestDBType):
     """
     Data class for Harvest Users.
 
@@ -32,24 +212,33 @@ class Client(HarvestType):
     .. seealso:: http://help.getharvest.com/api/clients-api/clients/using-the-clients-api/ for more details
     """
 
+    __tablename__ = 'clients'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    """Client name"""
+    active = Column(Boolean)
+    """Determines if the client is active, or archived. Options: true, false."""
+    currency = Column(String)
+    """The currency you’d like to use for the client."""
+    highrise_id = Column(Integer, nullable=True)
+    """Optional Highrise ID for our legacy integration"""
+    cache_version = Column(Integer)
+    updated_at = Column(String)
+    created_at = Column(String)
+    currency_symbol = Column(String)
+    """The symbol that correlates to the selected currency."""
+    details = Column(String)
+    """Additional details, normally used for address information."""
+    default_invoice_timeframe = Column(String, nullable=True)
+    last_invoice_kind = Column(String, nullable=True)
+
     def __init__(self, name, id=None, active=None, currency=None,
                  highrise_id=None, cache_version=None, updated_at=None,
                  created_at=None, currency_symbol=None, details=None,
                  default_invoice_timeframe=None, last_invoice_kind=None):
         """
 
-        :param name: New client name.
-        :param id:
-        :param active: Determines if the client is active, or archived. Options: true, false.
-        :param currency: The currency you’d like to use for the client.
-        :param highrise_id: Optional Highrise ID for our legacy integration
-        :param cache_version:
-        :param updated_at:
-        :param created_at:
-        :param currency_symbol: The symbol that correlates to the selected currency.
-        :param details: Additional details, normally used for address information.
-        :param default_invoice_timeframe:
-        :param last_invoice_kind:
+
         """
         super().__init__()
         self.id = id
@@ -64,6 +253,172 @@ class Client(HarvestType):
         self.details = details
         self.default_invoice_timeframe = default_invoice_timeframe
         self.last_invoice_kind = last_invoice_kind
+
+
+
+
+class DayEntry(HarvestDBType):
+    """
+    
+    ::
+        "day_entry": {
+                "id": 367231666,
+                "notes": "Some notes.",
+                "spent_at": "2015-07-01",
+                "hours": 0.16,
+                "user_id": 508343,
+                "project_id": 3554414,
+                "task_id": 2086200,
+                "created_at": "2015-08-25T14:31:52Z",
+                "updated_at": "2015-08-25T14:47:02Z",
+                "adjustment_record": false,
+                "timer_started_at": "2015-08-25T14:47:02Z",
+                "is_closed": false,
+                "is_billed": false,
+                "hours_with_timer": 0.16
+            }
+    """
+
+    __tablename__ = 'day_entries'
+    id = Column(Integer,primary_key=True)
+    """Time Entry ID"""
+    notes = Column(String)
+    """Time entry notes"""
+    spent_at = Column(String)
+    """Date of the time entry"""
+    hours = Column(Float)
+    """Number of (decimal time) hours tracked in this time entry"""
+    user_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
+    """User ID that tracked this time entry"""
+    project_id = Column(Integer, ForeignKey('projects.id'), primary_key=True)
+    """Project ID that the time entry is associated with"""
+    task_id = Column(Integer, ForeignKey('tasks.id'), primary_key=True)
+    created_at = Column(String)
+    """Time (UTC) and date that entry was created"""
+    updated_at = Column(String)
+    """Time (UTC) and date that entry was last updated"""
+    adjustment_record = Column(Boolean)
+    timer_started_at = Column(String)
+    """Time (UTC) and date that timer was started (if tracking by duration)"""
+    is_closed = Column(Boolean)
+    """true if the time entry has been approved via Timesheet Approval (no API support), false if un-approved"""
+    is_billed = Column(Boolean)
+    """true if the time entry has been marked as invoiced, false if uninvoiced"""
+    hours_with_timer = Column(Float)
+    """Running timers will return the currently tracked value in decimal time"""
+
+    """
+
+    Started-At	Start timestamp of timer (if timestamps are enabled)
+    Ended-At	End timestamp of timer (if timestamps are enabled)
+
+
+    """
+
+
+    task = relationship('Task', back_populates="day_entries") # type: Task
+    project = relationship('Project', back_populates="day_entries") # type: Project
+    user = relationship('User', back_populates="day_entries") # type: User
+
+
+class TaskAssignment(HarvestDBType):
+    """
+
+    ::
+
+        "task_assignment": {
+            "project_id": 3554414,
+            "task_id": 2086199,
+            "billable": true,
+            "deactivated": true,
+            "hourly_rate": 100,
+            "budget": null,
+            "id": 37453419,
+            "created_at": "2013-04-30T20:28:12Z",
+            "updated_at": "2013-08-01T22:11:11Z",
+            "estimate": null
+          }
+
+    .. seealso:: http://help.getharvest.com/api/tasks-api/tasks/task-assignments/
+    """
+    __tablename__ = 'task_assignments'
+
+    id = Column(Integer, primary_key=True)
+
+    project_id = Column(Integer, ForeignKey('projects.id'), primary_key=True)
+
+    task_id = Column(Integer, ForeignKey('tasks.id'), primary_key=True)
+
+    task = relationship('Task', back_populates="task_assignments") # type: Task
+    project = relationship('Project', back_populates="task_assignments") # type: Project
+
+    billable = Column(Boolean)
+
+    deactivated = Column(Boolean)
+
+    hourly_rate = Column(Integer)
+
+    budget = Column(Integer, nullable=True)
+
+    created_at = Column(String)
+
+    updated_at = Column(String)
+
+    estimate = Column(Integer, nullable=True)
+
+
+class Task(HarvestDBType):
+    """
+        ::
+
+        "task": {
+            "id": 2086199,
+            "name": "Admin",
+            "billable_by_default": false,
+            "created_at": "2013-04-30T20:28:12Z",
+            "updated_at": "2013-08-14T22:25:42Z",
+            "is_default": true,
+            "default_hourly_rate": 0,
+            "deactivated": true
+        }
+
+    .. seealso:: http://help.getharvest.com/api/tasks-api/tasks/create-show-tasks/
+    """
+    __tablename__ = 'tasks'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    billable_by_default = Column(Boolean)
+    created_at = Column(String)
+    updated_at = Column(String)
+    is_default = Column(Boolean)
+    default_hourly_rate = Column(Integer)
+    deactivated = Column(Boolean)
+
+    task_assignments = relationship('TaskAssignment',back_populates="task")
+    day_entries = relationship('DayEntry',
+                               back_populates="task")  # type: typing.List[DayEntry]
+
+    def __str__(self, *args, **kwargs):
+        return self.name
+
+
+class Day(HarvestType):
+    """
+
+    ::
+
+        {
+            'day_entries': [],
+            'for_day': '2016-06-28',
+        }
+    """
+
+    def __init__(self, day_entries: typing.List[DayEntry] = None,
+                 for_day: str = None):
+        super().__init__()
+        self.day_entries = day_entries
+        self.for_day = for_day
+
 
 class Contact(HarvestType):
     """
@@ -92,9 +447,9 @@ class Contact(HarvestType):
     """
 
     def __init__(self, id=None, client_id=None, first_name=None,
-                 last_name=None,
-                 email=None, phone_office=None, phone_mobile=None, fax=None,
-                 title=None, created_at=None, updated_at=None):
+                 last_name=None, email=None, phone_office=None,
+                 phone_mobile=None, fax=None, title=None, created_at=None,
+                 updated_at=None):
         super().__init__()
         self.id = id
         self.client_id = client_id
@@ -107,6 +462,12 @@ class Contact(HarvestType):
         self.title = title
         self.created_at = created_at
         self.updated_at = updated_at
+
+    def __str__(self, *args, **kwargs):
+        return '{firstName} {lastName} <{email}>'.format(
+                firstName=self.first_name, lastName=self.last_name,
+                email=self.email)
+
 
 class Invoice(HarvestType):
     """
@@ -350,333 +711,3 @@ class Expense(HarvestType):
         self.is_locked = is_locked
         self.locked_reason = locked_reason
         # TODO http://help.getharvest.com/api/expenses-api/expenses/add-update-expenses/#attach-receipt-image
-
-class Project(HarvestType):
-    """
-    ::
-
-        "project": {
-            "id": 3554414,
-            "client_id": 3398386,
-            "name": "Internal",
-            "code": "Testing",
-            "active": true,
-            "billable": true,
-            "bill_by": "People",
-            "hourly_rate": 100,
-            "budget": 100,
-            "budget_by": "project",
-            "notify_when_over_budget": true,
-            "over_budget_notification_percentage": 80,
-            "over_budget_notified_at": null,
-            "show_budget_to_all": true,
-            "created_at": "2013-04-30T20:28:12Z",
-            "updated_at": "2015-04-15T15:44:17Z",
-            "starts_on": "2013-04-30",
-            "ends_on": "2015-06-01",
-            "estimate": 100,
-            "estimate_by": "project",
-            "hint_earliest_record_at": "2013-04-30",
-            "hint_latest_record_at": "2014-12-09",
-            "notes": "Some project notes go here!",
-            "cost_budget": null,
-            "cost_budget_include_expenses": false
-        }
-
-    .. seealso:: http://help.getharvest.com/api/projects-api/projects/create-and-show-projects/
-    """
-
-    def __init__(self, client_id, name, id=None, code=None,
-                 active: bool = True, billable: bool = False, bill_by="project",
-                 hourly_rate=None, budget=None, budget_by="project",
-                 notify_when_over_budget: bool = None,
-                 over_budget_notification_percentage=None,
-                 over_budget_notified_at=None, show_budget_to_all: bool = None,
-                 created_at=None, updated_at=None, starts_on=None,
-                 ends_on=None, estimate=None, estimate_by=None,
-                 hint_earliest_record_at=None, hint_latest_record_at=None,
-                 notes: str = None, cost_budget=None,
-                 cost_budget_include_expenses: bool = None):
-        """
-
-
-        :param id: Project ID
-        :param client_id: Client ID for project
-        :param name: Project name
-        :param code: Project code
-        :param active: Whether the project is active or archived. Options: true, false.
-        :param billable: Whether the project is billable or not billable. Options: true, false.
-        :param bill_by: The method by which the project is invoiced. Options: "project", "tasks", "people", or "none".
-        :param hourly_rate: Rate for projects billed by Project Hourly Rate
-        :param budget: Budget value for the project.
-        :param budget_by: The method by which the project is budgeted. Options: "project" (Hours Per Project), "project_cost" (Total Project Fees), "task" (Hours Per Task), "person" (Hours Per Person), "none" (No Budget).
-        :param notify_when_over_budget: Option to send notification emails when a project reaches the budget threshold set in Over-Budget-Notification-Percentage Options: true, false.
-        :param over_budget_notification_percentage: Percentage value to trigger over budget email alerts.
-        :param over_budget_notified_at: Date of last over budget notification. If none have been sent, this will be nil.
-        :param show_budget_to_all: Option to show project budget to all employees. Does not apply to Total Project Fee projects. Options: true, false.
-        :param created_at: Date of earliest record for this project. Updated every 24 hours.
-        :param updated_at: Date of most recent record for this project. Updated every 24 hours.
-        :param starts_on:
-        :param ends_on:
-        :param estimate:
-        :param estimate_by:
-        :param hint_earliest_record_at:
-        :param hint_latest_record_at:
-        :param notes:
-        :param cost_budget: Budget value for Total Project Fees projects.
-        :param cost_budget_include_expenses: Option for budget of Total Project Fees projects to include tracked expenses.
-        """
-        super().__init__()
-        self.id = id
-        self.client_id = client_id
-        self.name = name
-        self.code = code
-        self.active = active
-        self.billable = billable
-        self.bill_by = bill_by
-        self.hourly_rate = hourly_rate
-        self.budget = budget
-        self.budget_by = budget_by
-        self.notify_when_over_budget = notify_when_over_budget
-        self.over_budget_notification_percentage = over_budget_notification_percentage
-        self.over_budget_notified_at = over_budget_notified_at
-        self.show_budget_to_all = show_budget_to_all
-        self.created_at = created_at
-        self.updated_at = updated_at
-        self.starts_on = starts_on
-        self.ends_on = ends_on
-        self.estimate = estimate
-        self.estimate_by = estimate_by
-        self.hint_earliest_record_at = hint_earliest_record_at
-        self.hint_latest_record_at = hint_latest_record_at
-        self.notes = notes
-        self.cost_budget = cost_budget
-        self.cost_budget_include_expenses = cost_budget_include_expenses
-
-class DayEntry(HarvestType):
-    """
-    
-    ::
-        "day_entry": {
-                "id": 367231666,
-                "notes": "Some notes.",
-                "spent_at": "2015-07-01",
-                "hours": 0.16,
-                "user_id": 508343,
-                "project_id": 3554414,
-                "task_id": 2086200,
-                "created_at": "2015-08-25T14:31:52Z",
-                "updated_at": "2015-08-25T14:47:02Z",
-                "adjustment_record": false,
-                "timer_started_at": "2015-08-25T14:47:02Z",
-                "is_closed": false,
-                "is_billed": false,
-                "hours_with_timer": 0.16
-            }
-    """
-
-    def __init__(self, id=None, notes=None, spent_at=None, hours=None,
-                 user_id=None, project_id=None, task_id=None, created_at=None,
-                 updated_at=None, adjustment_record=None,
-                 timer_started_at=None, is_closed=None, is_billed=None,
-                 hours_with_timer=None):
-        """
-
-        Started-At	Start timestamp of timer (if timestamps are enabled)
-        Ended-At	End timestamp of timer (if timestamps are enabled)
-
-        :param id: Time Entry ID
-        :param notes: Time entry notes
-        :param spent_at: Date of the time entry
-        :param hours: Number of (decimal time) hours tracked in this time entry
-        :param user_id: User ID that tracked this time entry
-        :param project_id: Project ID that the time entry is associated with
-        :param task_id:
-        :param created_at: Time (UTC) and date that entry was created
-        :param updated_at: Time (UTC) and date that entry was last updated
-        :param adjustment_record:
-        :param timer_started_at: Time (UTC) and date that timer was started (if tracking by duration)
-        :param is_closed: true if the time entry has been approved via Timesheet Approval (no API support), false if un-approved
-        :param is_billed: true if the time entry has been marked as invoiced, false if uninvoiced
-        :param hours_with_timer: Running timers will return the currently tracked value in decimal time
-        """
-        super().__init__()
-        self.id = id
-        self.notes = notes
-        self.spent_at = spent_at
-        self.hours = hours
-        self.user_id = user_id
-        self.project_id = project_id
-        self.task_id = task_id
-        self.created_at = created_at
-        self.updated_at = updated_at
-        self.adjustment_record = adjustment_record
-        self.timer_started_at = timer_started_at
-        self.is_closed = is_closed
-        self.is_billed = is_billed
-        self.hours_with_timer = hours_with_timer
-
-class TaskAssignment(HarvestType):
-    """
-
-    ::
-
-        "task_assignment": {
-            "project_id": 3554414,
-            "task_id": 2086199,
-            "billable": true,
-            "deactivated": true,
-            "hourly_rate": 100,
-            "budget": null,
-            "id": 37453419,
-            "created_at": "2013-04-30T20:28:12Z",
-            "updated_at": "2013-08-01T22:11:11Z",
-            "estimate": null
-          }
-
-    .. seealso:: http://help.getharvest.com/api/tasks-api/tasks/task-assignments/
-    """
-
-    def __init__(self, id=None, project_id=None, task_id=None, billable=None,
-                 deactivated=None, hourly_rate=None, budget=None,
-                 created_at=None, updated_at=None, estimate=None):
-        super().__init__()
-        self.project_id = project_id
-        self.task_id = task_id
-        self.billable = billable
-        self.deactivated = deactivated
-        self.hourly_rate = hourly_rate
-        self.budget = budget
-        self.id = id
-        self.created_at = created_at
-        self.updated_at = updated_at
-        self.estimate = estimate
-
-class Task(HarvestType):
-    """
-        ::
-
-        "task": {
-            "id": 2086199,
-            "name": "Admin",
-            "billable_by_default": false,
-            "created_at": "2013-04-30T20:28:12Z",
-            "updated_at": "2013-08-14T22:25:42Z",
-            "is_default": true,
-            "default_hourly_rate": 0,
-            "deactivated": true
-        }
-
-    .. seealso:: http://help.getharvest.com/api/tasks-api/tasks/create-show-tasks/
-    """
-
-    def __init__(self, id=None, name=None, billable_by_default=None,
-                 created_at=None, updated_at=None, is_default=None,
-                 default_hourly_rate=None, deactivated=None):
-        super(Task, self).__init__()
-        self.id = id
-        self.name = name
-        self.billable_by_default = billable_by_default
-        self.created_at = created_at
-        self.updated_at = updated_at
-        self.is_default = is_default
-        self.default_hourly_rate = default_hourly_rate
-        self.deactivated = deactivated
-
-class Day(HarvestType):
-    """
-
-    ::
-
-        {
-            'day_entries': [],
-            'for_day': '2016-06-28',
-        }
-    """
-
-    def __init__(self, day_entries: typing.List[DayEntry] = None,
-                 for_day: str = None):
-        super().__init__()
-        self.day_entries = day_entries
-        self.for_day = for_day
-
-class User(HarvestType):
-    """
-
-    ::
-
-        "user": {
-            "id": 508343,
-            "email": "user@example.com",
-            "created_at": "2013-04-30T20:28:12Z",
-            "is_admin": true,
-            "first_name": "Harvest",
-            "last_name": "User",
-            "timezone": "Eastern Time (US & Canada)",
-            "is_contractor": false,
-            "telephone": "",
-            "is_active": true,
-            "has_access_to_all_future_projects": true,
-            "default_hourly_rate": 0,
-            "department": "",
-            "wants_newsletter": true,
-            "updated_at": "2015-04-29T14:54:19Z",
-            "cost_rate": null,
-            "identity_account_id": 302900,
-            "identity_user_id": 20725
-        }
-
-
-    """
-
-    def __init__(self, id=None, email=None, created_at=None, is_admin=None,
-                 first_name=None, last_name=None, timezone=None,
-                 is_contractor=None, telephone=None, is_active=None,
-                 has_access_to_all_future_projects=None,
-                 default_hourly_rate=None, department=None,
-                 wants_newsletter=None, updated_at=None, cost_rate=None,
-                 identity_account_id=None, identity_user_id=None):
-        """
-
-
-        :param id:
-        :param email:
-        :param created_at:
-        :param is_admin: Optional: To create a new admin user.
-        :param first_name:
-        :param last_name:
-        :param timezone: Optional: To set a timezone other than the account default.
-        :param is_contractor: Optional: To create a new contractor user.
-        :param telephone: Optional: Telephone number for user.
-        :param is_active: Optional: If the user is active, or archived (true, false)
-        :param has_access_to_all_future_projects: Optional: If true this user will automatically be assigned to all new projects.
-        :param default_hourly_rate: Optional: Default rate for the user in new projects, if no rate is specified.
-        :param department: Optional: Department for user.
-        :param wants_newsletter:
-        :param updated_at:
-        :param cost_rate: Optional: Cost (internal) rate for user.
-        :param identity_account_id:
-        :param identity_user_id:
-        """
-
-        super().__init__()
-        self.id = id
-        self.email = email
-        self.created_at = created_at
-        self.is_admin = is_admin
-        self.first_name = first_name
-        self.last_name = last_name
-        self.timezone = timezone
-        self.is_contractor = is_contractor
-        self.telephone = telephone
-        self.is_active = is_active
-        self.has_access_to_all_future_projects = has_access_to_all_future_projects
-        self.default_hourly_rate = default_hourly_rate
-        self.department = department
-        self.wants_newsletter = wants_newsletter
-        self.updated_at = updated_at
-        self.cost_rate = cost_rate
-        self.identity_account_id = identity_account_id
-        self.identity_user_id = identity_user_id
-
-

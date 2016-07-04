@@ -148,8 +148,8 @@ def json_type_hook(d):
 def wrap(className, values):
     name___ = sys.modules[harvest_types.__name__]
     class_ = getattr(name___, className)
-    object_ = class_.__new__(class_)
-    object_.__dict__ = values
+    object_ = class_(**values)
+    #object_.__dict__ = values
     # object_.__dict__.update((k, v) for k, v in d[key] if v is not None)
     return object_
 

@@ -15,7 +15,8 @@ requirements = [
     'requests',
     'requests_oauthlib',
     'typing',
-    'inflection'
+    'inflection',
+    'sqlalchemy'
     # TODO: put package requirements here
 ]
 

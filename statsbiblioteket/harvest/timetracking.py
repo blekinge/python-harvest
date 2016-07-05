@@ -16,7 +16,7 @@ class Timetracking(Rest):
         url = '/daily/{0}/{1}'.format(day_of_the_year, year)
         return self._get(url,params={'slim':1})
 
-    def get_entry(self, entry_id) -> DayEntry:
+    def get_day_entry(self, entry_id) -> DayEntry:
         """
         Get a time entry by entry_id
         """
@@ -30,27 +30,27 @@ class Timetracking(Rest):
         url = '/daily/timer/{0}'.format(entry_id)
         return self._get(url,params={'slim':1})
 
-    def add_entry(self, day_entry:DayEntry):
+    def add_day_entry(self, day_entry:DayEntry):
         """
         Create a new time entry?
         """
         return self._post('/daily/add', day_entry)
 
-    def add_entry_for_user(self, user_id, day_entry:DayEntry):
+    def add_day_entry_for_user(self, user_id, day_entry:DayEntry):
         """
         Add data for a user
         """
         url = '/daily/add'
         return self._post(url, data=day_entry, params={'of_user':user_id})
 
-    def delete_entry(self, entry_id):
+    def delete_day_entry(self, entry_id):
         """
         Delete an entry
         """
         url = '/daily/delete/{0}'.format(entry_id)
-        return self.delete_entry(url)
+        return self.delete_day_entry(url)
 
-    def update_entry(self, entry_id, day_entry:DayEntry):
+    def update_day_entry(self, entry_id, day_entry:DayEntry):
         """
         Update an entry
         """

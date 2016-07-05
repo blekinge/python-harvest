@@ -1,16 +1,47 @@
 import typing
+from pprint import pformat
+from typing import List
+
 
 # From http://docs.sqlalchemy.org/en/rel_1_0/orm/tutorial.html
+import inflection
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey
 from sqlalchemy.orm import relationship
 
 
 class HarvestType(object):
-    pass
+    def __eq__(self, other):
+        if type(other) is type(self):
+            return self.__dict__ == other.__dict__
+        return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self, *args, **kwargs):
+        return self.id
+
+    def __lt__(self, other):
+        if hasattr(other, 'id'):
+            return self.id < other.id
+        return False
+
+    def __repr__(self, *args, **kwargs):
+        name = inflection.underscore(self.__class__.__name__)
+        values = dict((key,value) for key, value in self.__dict__.items() if not key.startswith('_'))
+        return pformat({name : values})
+
+    def __str__(self, *args, **kwargs):
+        name_attr = getattr(self,'name')
+        if name_attr:
+            return self.name
+        else:
+            super(HarvestType, self).__str__(args,kwargs)
 
 
-HarvestDBType = declarative_base()
+
+HarvestDBType = declarative_base(cls=HarvestType)
 
 
 class User(HarvestDBType):
@@ -37,8 +68,7 @@ class User(HarvestDBType):
             "identity_account_id": 302900,
             "identity_user_id": 20725
         }
-
-    """
+   """
 
     __tablename__ = 'users'
 
@@ -90,15 +120,14 @@ class User(HarvestDBType):
     signup_redirection_cookie = Column(String, nullable=True)
 
     day_entries = relationship('DayEntry',
-                               back_populates="user")  # type: typing.List[DayEntry]
-    expenses = relationship('Expense', back_populates="user")
-    invoices = relationship('Invoice', back_populates='creator')
+                               back_populates="user")  # type: List[DayEntry]
+    expenses = relationship('Expense', back_populates="user") # type: List[Expense]
+    invoices = relationship('Invoice', back_populates='creator') # type: List[Invoice]
 
     def __str__(self, *args, **kwargs):
         return '{firstName} {lastName} <{email}>'.format(
-                firstName=self.first_name, lastName=self.last_name,
-                email=self.email)
-
+             firstName=self.first_name, lastName=self.last_name,
+             email=self.email)
 
 class Project(HarvestDBType):
     """
@@ -181,15 +210,14 @@ class Project(HarvestDBType):
     """Option for budget of Total Project Fees projects to include tracked expenses."""
 
     task_assignments = relationship('TaskAssignment',
-                                    back_populates="project")  # type: typing.List[TaskAssignment]
+                                    back_populates="project")  # type: List[TaskAssignment]
     day_entries = relationship('DayEntry',
-                               back_populates="project")  # type: typing.List[DayEntry]
-    expenses = relationship('Expense', back_populates="Project")
+                               back_populates="project")  # type: List[DayEntry]
+    expenses = relationship('Expense', back_populates="project") # type: List[Expense]
 
-    client = relationship('Client',back_populates='projects')
+    client = relationship('Client',back_populates='projects') # type: Client
 
-    def __str__(self, *args, **kwargs):
-        return self.name
+
 
 
 class Client(HarvestDBType):
@@ -219,35 +247,55 @@ class Client(HarvestDBType):
     """
 
     __tablename__ = 'clients'
+
     id = Column(Integer, primary_key=True)
+
     name = Column(String)
     """Client name"""
+
     active = Column(Boolean)
     """Determines if the client is active, or archived. Options: true, false."""
+
     currency = Column(String)
     """The currency you’d like to use for the client."""
+
     highrise_id = Column(Integer, nullable=True)
     """Optional Highrise ID for our legacy integration"""
+
+    address = Column(String, nullable=True)
+
     cache_version = Column(Integer)
+
     updated_at = Column(String)
+
     created_at = Column(String)
+
     currency_symbol = Column(String)
     """The symbol that correlates to the selected currency."""
-    details = Column(String)
+
+    details = Column(String, nullable=True)
     """Additional details, normally used for address information."""
+
     default_invoice_timeframe = Column(String, nullable=True)
+
+    default_invoice_kind = Column(String, nullable=True)
+
     last_invoice_kind = Column(String, nullable=True)
 
+    statement_key = Column(String, nullable=True)
+
     contacts = relationship('Contact',
-                            back_populates="client")  # type: typing.List[Contact]
-    invoices = relationship('Invoice', back_populates='client')
-    projects = relationship('Project', back_populates='client')
+                            back_populates="client")  # type: List[Contact]
+    invoices = relationship('Invoice', back_populates='client') # type: List[Invoice]
+
+    projects = relationship('Project', back_populates='client') # type: List[Project]
+
 
 
 class DayEntry(HarvestDBType):
     """
-    
     ::
+
         "day_entry": {
                 "id": 367231666,
                 "notes": "Some notes.",
@@ -309,6 +357,8 @@ class DayEntry(HarvestDBType):
 
     """
 
+    def __str__(self, *args, **kwargs):
+        return "{date} - {project_id} - {hours}".format(date=self.spent_at, project_id=self.project_id, hours=self.hours)
 
 
 class TaskAssignment(HarvestDBType):
@@ -335,9 +385,9 @@ class TaskAssignment(HarvestDBType):
 
     id = Column(Integer, primary_key=True)
 
-    project_id = Column(Integer, ForeignKey('projects.id'), primary_key=True)
+    project_id = Column(Integer, ForeignKey('projects.id'))
 
-    task_id = Column(Integer, ForeignKey('tasks.id'), primary_key=True)
+    task_id = Column(Integer, ForeignKey('tasks.id'))
 
     task = relationship('Task',
                         back_populates="task_assignments")  # type: Task
@@ -386,30 +436,11 @@ class Task(HarvestDBType):
     default_hourly_rate = Column(Integer)
     deactivated = Column(Boolean)
 
-    task_assignments = relationship('TaskAssignment', back_populates="task")
+    task_assignments = relationship('TaskAssignment', back_populates="task") # type: List[TaskAssignment]
     day_entries = relationship('DayEntry',
-                               back_populates="task")  # type: typing.List[DayEntry]
-
-    def __str__(self, *args, **kwargs):
-        return self.name
+                               back_populates="task")  # type: List[DayEntry]
 
 
-class Day(HarvestType):
-    """
-
-    ::
-
-        {
-            'day_entries': [],
-            'for_day': '2016-06-28',
-        }
-    """
-
-    def __init__(self, day_entries: typing.List[DayEntry] = None,
-                 for_day: str = None):
-        super().__init__()
-        self.day_entries = day_entries
-        self.for_day = for_day
 
 
 class Contact(HarvestDBType):
@@ -506,81 +537,115 @@ class Invoice(HarvestDBType):
     """
 
     __tablename__ = 'invoices'
+
     # Parameters Generated By Harvest
     id = Column(Integer, primary_key=True)
+
     client_key = Column(String)
     """Value to generate URL to client dashboard. (Example: https://YOURACCOUNT.harvestapp.com/clients/invoices/{CLIENTKEY})"""
+
     estimate_id = Column(String, nullable=True)
     """This value will exist if an estimate was converted into an invoice."""
+
     retainer_id = Column(Integer, nullable=True)
     """This value will exist if the invoice was created from a retainer."""
+
     recurring_invoice_id = Column(String, nullable=True)
     """This value will exist if the invoice is recurring, and automatically generated."""
 
     created_by_id = Column(Integer, ForeignKey('users.id'))
     """User ID of the invoice creator."""
-    creator = relationship('User', back_populates='invoices')
+
+    creator = relationship('User', back_populates='invoices') # type: User
 
     state = Column(String)
     """Updated when invoice is created, sent, paid, late, or written off. Options: draft, paid, late, sent, written-off."""
+
     created_at = Column(String)
     """Date invoice was created. (Example: 2015-04-09T12:07:56Z)"""
+
     updated_at = Column(String)
     """Date invoice was last updated. (Example: 2015-04-09T12:07:56Z)"""
 
     # User Editable Parameters
     client_id = Column(Integer, ForeignKey('clients.id'))
     """A valid client-id"""
-    client = relationship('Client', back_populates='invoices')
+
+    client = relationship('Client', back_populates='invoices') #type: Client
 
     period_start = Column(String)
     """Date for included project hours. (Example: 2015-04-22)"""
+
     period_end = Column(String)
     """End date for included project hours. (Example: 2015-05-22)"""
+
     number = Column(String, nullable=True)
     """Optional invoice number. If no value is set, the number will be automatically generated."""
+
     issued_at = Column(String)
     """ Invoice creation date. (Example: 2015-04-22)"""
+
     due_at = Column(String)
+
     amount = Column(Integer)
+
     currency = Column(String)
     """A valid currency format (Example: United States Dollar - USD). Optional, and will default to the client currency if no value is passed. Click here for a list of supported currencies"""
+
     notes = Column(String, nullable=True)
     """Optional invoice notes."""
+
     purchase_order = Column(String, nullable=True)
     """Optional purchase order number."""
+
     due_amount = Column(Integer)
+
     due_at_human_format = Column(String)
     """Invoice due date. Acceptable formats are NET N where N is the number of days until the invoice is due."""
+
     tax = Column(String, nullable=True)
     """First tax rate for created invoice. Optional. Account default used otherwise."""
+
     tax_amount = Column(Integer)
+
     subject = Column(String)
     """Optional invoice subject."""
+
     tax2 = Column(String, nullable=True)
     """Second tax rate for created invoice. Optional. Account default used otherwise."""
+
     tax2_amount = Column(Integer)
+
     discount = Column(String, nullable=True)
     """Optional value to discount invoice total."""
+
     discount_amount = Column(Integer)
+
     csv_line_items = Column(String)
     """Used to create line items in free-form invoices. Entries should have their entries enclosed in quotes when they contain extra commas. This is especially important if you are using a number format which uses commas as the decimal separator."""
+
     expense_summary_kind = Column(String)
     """Summary type for expenses in an invoice. Options: project, people, category, detailed."""
+
     kind = Column(String)
     """Invoice type. Options: free-form, project, task, people, detailed. (See Invoice Types)"""
+
     projects_to_invoice = Column(String)
     """Comma separated project IDs to gather data from, unused for free-form invoices."""
+
     import_hours = Column(String)
     """Hours to import into invoices. Options: all(import all hours), yes (import hours using period-start, period-end), no (do not import hours)."""
+
     import_expense = Column(String)
     """Expenses to import into invoices. Options: all(import all expenses), yes (import expenses using expense-period-start, expense-period-end), no (do not import expenses)."""
+
     expense_period_start = Column(String)
     """Date for included project expenses. (Example: 2015-04-22)"""
+
     expense_period_end = Column(String)
     """End date for included project expenses. (Example: 2015-05-22)"""
 
-    expense = relationship('Expense', back_populates="invoice")
+    expense = relationship('Expense', back_populates="invoice") # type:Expense
 
 
 class ExpenseCategory(HarvestDBType):
@@ -599,16 +664,22 @@ class ExpenseCategory(HarvestDBType):
         }
     """
     __tablename__ = 'expense_categories'
+
     id = Column(Integer, primary_key=True)
+
     name = Column(String)
+
     unit_name = Column(String, nullable=True)
+
     unit_price = Column(String, nullable=True)
+
     created_at = Column(String)
+
     updated_at = Column(String)
+
     deactivated = Column(Boolean)
 
-    expenses = relationship('Expense',
-                                    back_populates='expense_category')
+    expenses = relationship('Expense', back_populates='expense_category') # type: List[Expense]
 
 
 class Expense(HarvestDBType):
@@ -640,40 +711,72 @@ class Expense(HarvestDBType):
     """
 
     __tablename__ = 'expense'
+
     id = Column(Integer, primary_key=True)
+
     total_cost = Column(Integer)
     """integer value for the expense entry"""
+
     units = Column(Integer)
     """integer value for use with an expense calculated by unit price (Example: Mileage)"""
+
     created_at = Column(String)
+
     updated_at = Column(String)
 
     project_id = Column(Integer, ForeignKey('projects.id'))
     """Valid and existing project ID"""
-    project = relationship('Project', back_populates="expenses")
+
+    project = relationship('Project', back_populates="expenses") # type: Project
 
     expense_category_id = Column(Integer, ForeignKey('expense_categories.id'))
     """Valid and existing expense category ID"""
-    expense_category = relationship('ExpenseCategory',back_populates='expenses')
+
+    expense_category = relationship('ExpenseCategory',back_populates='expenses') # type: ExpenseCategory
 
     user_id = Column(Integer, ForeignKey('users.id'))
-    user = relationship('User', back_populates="expenses")
+
+    user = relationship('User', back_populates="expenses") # type: User
 
     spent_at = Column(String)
     """Date for expense entry"""
+
     is_closed = Column(Boolean)
+
     notes = Column(String)
     """Expense entry notes"""
 
     invoice_id = Column(Integer, ForeignKey('invoices.id'))
-    invoice = relationship('Invoice', back_populates="expense")
+
+    invoice = relationship('Invoice', back_populates="expense") # type: Invoice
 
     billable = Column(Boolean)
     """Options: true, false. Note: Only expenses that are billable can be invoiced."""
+
     company_id = Column(Integer)  # TODO foreign key
+
     has_receipt = Column(Boolean)
+
     receipt_url = Column(String)
+
     is_locked = Column(Boolean)
+
     locked_reason = Column(String, nullable=True)
 
 
+class Day(HarvestType):
+    """
+
+    ::
+
+        {
+            'day_entries': [],
+            'for_day': '2016-06-28',
+        }
+    """
+
+    def __init__(self, day_entries: List[DayEntry] = None,
+                 for_day: str = None):
+        super().__init__()
+        self.day_entries = day_entries
+        self.for_day = for_day

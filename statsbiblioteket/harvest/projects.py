@@ -47,7 +47,7 @@ class Projects(Rest):
         url = '/projects/{0}/expenses'.format(project_id)
         return self._get(url)
 
-    def get_project(self, project_id) -> typing.List[Project]:
+    def get_project(self, project_id) -> Project:
         """
         Get a particular project
         """
@@ -60,7 +60,7 @@ class Projects(Rest):
         """
         return self._post('/projects', data=project)
 
-    def update_project(self, project_id, project):
+    def update_project(self, project_id, project:Project):
         """
         Update a project
         Post similar XML or JSON as with create a new project, but include

@@ -74,7 +74,6 @@ def loadBasics():
     projects = harvest.projects()
     session.add_all(projects)
 
-    #get Tasks
     tasks = harvest.tasks()
     session.add_all(tasks)
 
@@ -88,5 +87,6 @@ def loadBasics():
 
 
 if __name__ == '__main__':
+    loadBasics()
     #loadDayEntries()
-    readDB()
+    #readDB()

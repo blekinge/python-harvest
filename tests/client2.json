@@ -1,0 +1,17 @@
+{
+  'details': None,
+  'default_invoice_timeframe': None,
+  'currency_symbol': 'kr',
+  'active': True,
+  'address': None,
+  'last_invoice_kind': None,
+  'default_invoice_kind': None,
+  'name': 'Statsbiblioteket',
+  'created_at': '2016-01-21T08:10:28Z',
+  'statement_key': '1fd634eb1e736febbdc8b1e4ed527f5e',
+  'cache_version': 4146617599,
+  'id': 4147687,
+  'highrise_id': None,
+  'updated_at': '2016-01-21T08:10:28Z',
+  'currency': 'Danish Krone - DKK'
+}

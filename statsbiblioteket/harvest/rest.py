@@ -10,7 +10,7 @@ from requests.packages.urllib3.exceptions import HTTPError
 from requests_oauthlib import OAuth2Session
 
 from statsbiblioteket.harvest import harvest_types
-from statsbiblioteket.harvest.harvest_types import DayEntry, Day
+from statsbiblioteket.harvest.harvest_types import DayEntry, Day, User
 
 HARVEST_STATUS_URL = 'http://www.harveststatus.com/api/v2/status.json'
 
@@ -126,10 +126,10 @@ def getOurName(d):
 
     if 'for_day' in d and 'day_entries' in d: #Special handling for Day
         day_entries = d['day_entries']
-        d['day_entries'] = [wrap(TimeSheet.__name__, day_entry) for day_entry
+        d['day_entries'] = [wrap(Day.__name__, day_entry) for day_entry
                             in day_entries or []]
         return Day.__name__, d
-    return None,None
+    return None,d
 
 def json_type_hook(d):
     try:
@@ -141,7 +141,7 @@ def json_type_hook(d):
     except:
          e = sys.exc_info()[0]
          print(e)
-         pass
+         raise e
     return d
 
 

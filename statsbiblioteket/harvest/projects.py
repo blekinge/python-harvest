@@ -31,18 +31,18 @@ class Projects(Rest):
         """
         Get the timesheets for a project
         """
-        params = {'from': start_date,
-                  'to': end_date}
+        params = {'from': start_date.replace('-', ''),
+                  'to': end_date.replace('-', '')}
 
         url = '/projects/{0}/entries'.format(project_id)
         return self._get(url, params=params)
 
-    def expenses_for_project(self, project_id, start_date, end_date) -> \
+    def expenses_for_project(self, project_id) -> \
     typing.List[Expense]:
         """
-        Get the expenses for a project between a start date and end date
+        Get the expenses for a project
         """
-        params = {'from': start_date, 'to': end_date}
+        #params = {'from': start_date, 'to': end_date}
 
         url = '/projects/{0}/expenses'.format(project_id)
         return self._get(url)

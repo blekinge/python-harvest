@@ -4,31 +4,30 @@ from statsbiblioteket.harvest.rest import Rest
 class Timetracking(Rest):
     # Time Tracking
 
-    @property
     def today(self) -> Day:
         """ today property """
-        return self._get('/daily', params={'slim':1})
+        return self._get('/daily', params={'slim': 1})
 
     def get_day(self, day_of_the_year=1, year=2012) -> Day:
         """
         Get time tracking for a day of a particular year
         """
         url = '/daily/{0}/{1}'.format(day_of_the_year, year)
-        return self._get(url,params={'slim':1})
+        return self._get(url,params={'slim': 1})
 
     def get_day_entry(self, entry_id) -> DayEntry:
         """
         Get a time entry by entry_id
         """
         url = '/daily/show/{0}'.format(entry_id)
-        return self._get(url,params={'slim':1})
+        return self._get(url,params={'slim': 1})
 
     def toggle_timer(self, entry_id):
         """
         Toggle the timer for an entry
         """
         url = '/daily/timer/{0}'.format(entry_id)
-        return self._get(url,params={'slim':1})
+        return self._get(url,params={'slim': 1})
 
     def add_day_entry(self, day_entry:DayEntry):
         """

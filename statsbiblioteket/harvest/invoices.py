@@ -22,7 +22,8 @@ class Invoices(Rest):
         if client_id:
             params = {'client': client_id}
         elif start_date or end_date:
-            params = {'from': start_date, 'to': end_date}
+            params = {'from': start_date.replace('-', ''),
+                      'to': end_date.replace('-', '')}
         elif status_enum:
             params = {'status':status_enum}
         elif updated_since:

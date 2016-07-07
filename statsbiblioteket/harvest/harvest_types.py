@@ -1,4 +1,4 @@
-import typing
+import logging
 from pprint import pformat
 from typing import List
 
@@ -39,9 +39,28 @@ class HarvestType(object):
         else:
             super(HarvestType, self).__str__(args,kwargs)
 
+def _lenient_constructor (self, **kwargs):
+    """A simple constructor that allows initialization from kwargs.
+
+    Sets attributes on the constructed instance using the names and
+    values in ``kwargs``.
+
+    If the attribute is not known beforehand, it is set privately
+
+    see _declarative_constructor
+    """
+    cls_ = type(self)
+    for key in kwargs:
+        if not hasattr(cls_, key):
+            logging.debug("%r is an invalid keyword argument for %s"
+                          % (key, cls_.__name__))
+            setattr(self, '_'+key, kwargs[key])
+        else:
+            setattr(self, key, kwargs[key])
 
 
-HarvestDBType = declarative_base(cls=HarvestType)
+
+HarvestDBType = declarative_base(cls=HarvestType, constructor=_lenient_constructor)
 
 
 class User(HarvestDBType):
@@ -119,10 +138,12 @@ class User(HarvestDBType):
 
     signup_redirection_cookie = Column(String, nullable=True)
 
-    day_entries = relationship('DayEntry',
-                               back_populates="user")  # type: List[DayEntry]
-    expenses = relationship('Expense', back_populates="user") # type: List[Expense]
-    invoices = relationship('Invoice', back_populates='creator') # type: List[Invoice]
+    linked_day_entries = relationship('DayEntry',
+                                      back_populates="linked_user")  # type: List[DayEntry]
+
+    linked_expenses = relationship('Expense', back_populates="linked_user") # type: List[Expense]
+
+    linked_invoices = relationship('Invoice', back_populates='linked_creator') # type: List[Invoice]
 
     def __str__(self, *args, **kwargs):
         return '{firstName} {lastName} <{email}>'.format(
@@ -167,58 +188,81 @@ class Project(HarvestDBType):
 
     id = Column(Integer, primary_key=True)
     """Project ID"""
+
     client_id = Column(Integer, ForeignKey('clients.id'))
     """Client ID for project"""
+
     name = Column(String)
     """Project name"""
+
     code = Column(String)
     """Project code"""
+
     active = Column(Boolean)
     """Whether the project is active or archived. Options: true, false."""
+
     billable = Column(Boolean, nullable=True)
     """Whether the project is billable or not billable. Options: true, false."""
+
     bill_by = Column(String)
     """The method by which the project is invoiced. Options: "project", "tasks", "people", or "none"."""
+
     hourly_rate = Column(Integer, nullable=True)
     """Rate for projects billed by Project Hourly Rate"""
+
     budget = Column(Integer, nullable=True)
     """Budget value for the project."""
+
     budget_by = Column(String)
     """The method by which the project is budgeted. Options: "project" (Hours Per Project), "project_cost" (Total Project Fees), "task" (Hours Per Task), "person" (Hours Per Person), "none" (No Budget)."""
+
     notify_when_over_budget = Column(Boolean)
     """Option to send notification emails when a project reaches the budget threshold set in Over-Budget-Notification-Percentage Options: true, false."""
+
     over_budget_notification_percentage = Column(Integer)
     """Percentage value to trigger over budget email alerts."""
+
     over_budget_notified_at = Column(String, nullable=True)
     """Date of last over budget notification. If none have been sent, this will be nil."""
+
     show_budget_to_all = Column(Boolean)
     """Option to show project budget to all employees. Does not apply to Total Project Fee projects. Options: true, false."""
+
     created_at = Column(String)
     """Date of earliest record for this project. Updated every 24 hours."""
+
     updated_at = Column(String)
     """Date of most recent record for this project. Updated every 24 hours."""
+
     starts_on = Column(String, nullable=True)
+
     ends_on = Column(String, nullable=True)
+
     estimate = Column(Integer, nullable=True)
+
     estimate_by = Column(String)
+
     hint_earliest_record_at = Column(String)
+
     hint_latest_record_at = Column(String)
+
     notes = Column(String)
+
     cost_budget = Column(String, nullable=True)
     """Budget value for Total Project Fees projects."""
+
     cost_budget_include_expenses = Column(Boolean, nullable=True)
     """Option for budget of Total Project Fees projects to include tracked expenses."""
 
-    task_assignments = relationship('TaskAssignment',
-                                    back_populates="project")  # type: List[TaskAssignment]
-    day_entries = relationship('DayEntry',
-                               back_populates="project")  # type: List[DayEntry]
-    expenses = relationship('Expense', back_populates="project") # type: List[Expense]
+    linked_task_assignments = relationship('TaskAssignment',
+                                    back_populates="linked_project")  # type: List[TaskAssignment]
 
-    client = relationship('Client',back_populates='projects') # type: Client
+    linked_day_entries = relationship('DayEntry',
+                               back_populates="linked_project")  # type: List[DayEntry]
 
+    linked_expenses = relationship('Expense', back_populates="linked_project") # type: List[Expense]
 
-
+    linked_client = relationship('Client',back_populates='linked_projects') # type: Client
 
 class Client(HarvestDBType):
     """
@@ -284,13 +328,12 @@ class Client(HarvestDBType):
 
     statement_key = Column(String, nullable=True)
 
-    contacts = relationship('Contact',
-                            back_populates="client")  # type: List[Contact]
-    invoices = relationship('Invoice', back_populates='client') # type: List[Invoice]
+    linked_contacts = relationship('Contact',
+                            back_populates="linked_client")  # type: List[Contact]
 
-    projects = relationship('Project', back_populates='client') # type: List[Project]
+    linked_invoices = relationship('Invoice', back_populates='linked_client') # type: List[Invoice]
 
-
+    linked_projects = relationship('Project', back_populates='linked_client') # type: List[Project]
 
 class DayEntry(HarvestDBType):
     """
@@ -312,42 +355,79 @@ class DayEntry(HarvestDBType):
                 "is_billed": false,
                 "hours_with_timer": 0.16
             }
+
+            {
+              "task": "Opgave",
+              "task_id": "5402830",
+
+              "client": "Statsbiblioteket",
+
+              "project": "Andet",
+              "project_id": "9817858",
+
+              "user_id": 1221014,
+
+              "created_at": "2016-07-07T08:18:33Z",
+              "id": 484786391,
+              "hours_without_timer": 0.37,
+              "spent_at": "2016-07-07",
+              "notes": "Mails",
+              "updated_at": "2016-07-07T08:30:48Z",
+              "hours": 0.37
+            }
     """
 
     __tablename__ = 'day_entries'
+
     id = Column(Integer, primary_key=True)
     """Time Entry ID"""
+
     notes = Column(String)
     """Time entry notes"""
+
     spent_at = Column(String)
     """Date of the time entry"""
+
     hours = Column(Float)
     """Number of (decimal time) hours tracked in this time entry"""
+
     user_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
     """User ID that tracked this time entry"""
-    user = relationship('User', back_populates="day_entries")  # type: User
+
+    linked_user = relationship('User', back_populates="linked_day_entries")  # type: User
 
     project_id = Column(Integer, ForeignKey('projects.id'), primary_key=True)
     """Project ID that the time entry is associated with"""
-    project = relationship('Project',
-                           back_populates="day_entries")  # type: Project
+
+    linked_project = relationship('Project',
+                           back_populates="linked_day_entries")  # type: Project
 
     task_id = Column(Integer, ForeignKey('tasks.id'), primary_key=True)
-    task = relationship('Task', back_populates="day_entries")  # type: Task
+
+    linked_task = relationship('Task', back_populates="linked_day_entries")  # type: Task
 
     created_at = Column(String)
     """Time (UTC) and date that entry was created"""
+
     updated_at = Column(String)
     """Time (UTC) and date that entry was last updated"""
+
     adjustment_record = Column(Boolean)
+
     timer_started_at = Column(String)
     """Time (UTC) and date that timer was started (if tracking by duration)"""
+
     is_closed = Column(Boolean)
     """true if the time entry has been approved via Timesheet Approval (no API support), false if un-approved"""
+
     is_billed = Column(Boolean)
     """true if the time entry has been marked as invoiced, false if uninvoiced"""
-    hours_with_timer = Column(Float)
+
+    hours_with_timer = Column(Float, nullable=True)
     """Running timers will return the currently tracked value in decimal time"""
+
+    hours_without_timer = Column(Float, nullable=True)
+
 
     """
 
@@ -389,10 +469,11 @@ class TaskAssignment(HarvestDBType):
 
     task_id = Column(Integer, ForeignKey('tasks.id'))
 
-    task = relationship('Task',
-                        back_populates="task_assignments")  # type: Task
-    project = relationship('Project',
-                           back_populates="task_assignments")  # type: Project
+    linked_task = relationship('Task',
+                        back_populates="linked_task_assignments")  # type: Task
+
+    linked_project = relationship('Project',
+                           back_populates="linked_task_assignments")  # type: Project
 
     billable = Column(Boolean)
 
@@ -427,18 +508,27 @@ class Task(HarvestDBType):
     .. seealso:: http://help.getharvest.com/api/tasks-api/tasks/create-show-tasks/
     """
     __tablename__ = 'tasks'
+
     id = Column(Integer, primary_key=True)
+
     name = Column(String)
+
     billable_by_default = Column(Boolean)
+
     created_at = Column(String)
+
     updated_at = Column(String)
+
     is_default = Column(Boolean)
+
     default_hourly_rate = Column(Integer)
+
     deactivated = Column(Boolean)
 
-    task_assignments = relationship('TaskAssignment', back_populates="task") # type: List[TaskAssignment]
-    day_entries = relationship('DayEntry',
-                               back_populates="task")  # type: List[DayEntry]
+    linked_task_assignments = relationship('TaskAssignment', back_populates="linked_task") # type: List[TaskAssignment]
+
+    linked_day_entries = relationship('DayEntry',
+                               back_populates="linked_task")  # type: List[DayEntry]
 
 
 
@@ -468,19 +558,30 @@ class Contact(HarvestDBType):
     .. seealso:: http://help.getharvest.com/api/clients-api/clients/using-the-client-contacts-api/
     """
     __tablename__ = 'contacts'
+
     id = Column(Integer, primary_key=True)
+
     client_id = Column(Integer, ForeignKey('clients.id'))
+
     first_name = Column(String)
+
     last_name = Column(String)
+
     email = Column(String)
+
     phone_office = Column(String)
+
     phone_mobile = Column(String)
+
     fax = Column(String)
+
     title = Column(String)
+
     created_at = Column(String)
+
     updated_at = Column(String)
 
-    client = relationship('Client', back_populates="contacts")  # type: Client
+    linked_client = relationship('Client', back_populates="linked_contacts")  # type: Client
 
     def __str__(self, *args, **kwargs):
         return '{firstName} {lastName} <{email}>'.format(
@@ -556,7 +657,7 @@ class Invoice(HarvestDBType):
     created_by_id = Column(Integer, ForeignKey('users.id'))
     """User ID of the invoice creator."""
 
-    creator = relationship('User', back_populates='invoices') # type: User
+    linked_creator = relationship('User', back_populates='linked_invoices') # type: User
 
     state = Column(String)
     """Updated when invoice is created, sent, paid, late, or written off. Options: draft, paid, late, sent, written-off."""
@@ -571,7 +672,7 @@ class Invoice(HarvestDBType):
     client_id = Column(Integer, ForeignKey('clients.id'))
     """A valid client-id"""
 
-    client = relationship('Client', back_populates='invoices') #type: Client
+    linked_client = relationship('Client', back_populates='linked_invoices') #type: Client
 
     period_start = Column(String)
     """Date for included project hours. (Example: 2015-04-22)"""
@@ -645,7 +746,7 @@ class Invoice(HarvestDBType):
     expense_period_end = Column(String)
     """End date for included project expenses. (Example: 2015-05-22)"""
 
-    expense = relationship('Expense', back_populates="invoice") # type:Expense
+    linked_expense = relationship('Expense', back_populates="linked_invoice") # type:Expense
 
 
 class ExpenseCategory(HarvestDBType):
@@ -679,7 +780,7 @@ class ExpenseCategory(HarvestDBType):
 
     deactivated = Column(Boolean)
 
-    expenses = relationship('Expense', back_populates='expense_category') # type: List[Expense]
+    linked_expenses = relationship('Expense', back_populates='linked_expense_category') # type: List[Expense]
 
 
 class Expense(HarvestDBType):
@@ -727,16 +828,16 @@ class Expense(HarvestDBType):
     project_id = Column(Integer, ForeignKey('projects.id'))
     """Valid and existing project ID"""
 
-    project = relationship('Project', back_populates="expenses") # type: Project
+    linked_project = relationship('Project', back_populates="linked_expenses") # type: Project
 
     expense_category_id = Column(Integer, ForeignKey('expense_categories.id'))
     """Valid and existing expense category ID"""
 
-    expense_category = relationship('ExpenseCategory',back_populates='expenses') # type: ExpenseCategory
+    linked_expense_category = relationship('ExpenseCategory',back_populates='linked_expenses') # type: ExpenseCategory
 
     user_id = Column(Integer, ForeignKey('users.id'))
 
-    user = relationship('User', back_populates="expenses") # type: User
+    linked_user = relationship('User', back_populates="linked_expenses") # type: User
 
     spent_at = Column(String)
     """Date for expense entry"""
@@ -748,7 +849,7 @@ class Expense(HarvestDBType):
 
     invoice_id = Column(Integer, ForeignKey('invoices.id'))
 
-    invoice = relationship('Invoice', back_populates="expense") # type: Invoice
+    linked_invoice = relationship('Invoice', back_populates="linked_expense") # type: Invoice
 
     billable = Column(Boolean)
     """Options: true, false. Note: Only expenses that are billable can be invoiced."""

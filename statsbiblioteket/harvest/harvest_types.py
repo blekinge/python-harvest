@@ -189,7 +189,7 @@ class Project(HarvestDBType):
     id = Column(Integer, primary_key=True)
     """Project ID"""
 
-    client_id = Column(Integer, ForeignKey('clients.id'))
+    client_id = Column(Integer, ForeignKey('clients.id'), primary_key=True)
     """Client ID for project"""
 
     name = Column(String)
@@ -465,9 +465,9 @@ class TaskAssignment(HarvestDBType):
 
     id = Column(Integer, primary_key=True)
 
-    project_id = Column(Integer, ForeignKey('projects.id'))
+    project_id = Column(Integer, ForeignKey('projects.id'), primary_key=True)
 
-    task_id = Column(Integer, ForeignKey('tasks.id'))
+    task_id = Column(Integer, ForeignKey('tasks.id'),  primary_key=True)
 
     linked_task = relationship('Task',
                         back_populates="linked_task_assignments")  # type: Task
@@ -561,7 +561,7 @@ class Contact(HarvestDBType):
 
     id = Column(Integer, primary_key=True)
 
-    client_id = Column(Integer, ForeignKey('clients.id'))
+    client_id = Column(Integer, ForeignKey('clients.id'), primary_key=True)
 
     first_name = Column(String)
 
@@ -654,7 +654,7 @@ class Invoice(HarvestDBType):
     recurring_invoice_id = Column(String, nullable=True)
     """This value will exist if the invoice is recurring, and automatically generated."""
 
-    created_by_id = Column(Integer, ForeignKey('users.id'))
+    created_by_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
     """User ID of the invoice creator."""
 
     linked_creator = relationship('User', back_populates='linked_invoices') # type: User
@@ -669,7 +669,7 @@ class Invoice(HarvestDBType):
     """Date invoice was last updated. (Example: 2015-04-09T12:07:56Z)"""
 
     # User Editable Parameters
-    client_id = Column(Integer, ForeignKey('clients.id'))
+    client_id = Column(Integer, ForeignKey('clients.id'), primary_key=True)
     """A valid client-id"""
 
     linked_client = relationship('Client', back_populates='linked_invoices') #type: Client
@@ -825,17 +825,17 @@ class Expense(HarvestDBType):
 
     updated_at = Column(String)
 
-    project_id = Column(Integer, ForeignKey('projects.id'))
+    project_id = Column(Integer, ForeignKey('projects.id'), primary_key=True)
     """Valid and existing project ID"""
 
     linked_project = relationship('Project', back_populates="linked_expenses") # type: Project
 
-    expense_category_id = Column(Integer, ForeignKey('expense_categories.id'))
+    expense_category_id = Column(Integer, ForeignKey('expense_categories.id'), primary_key=True)
     """Valid and existing expense category ID"""
 
     linked_expense_category = relationship('ExpenseCategory',back_populates='linked_expenses') # type: ExpenseCategory
 
-    user_id = Column(Integer, ForeignKey('users.id'))
+    user_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
 
     linked_user = relationship('User', back_populates="linked_expenses") # type: User
 
@@ -847,7 +847,7 @@ class Expense(HarvestDBType):
     notes = Column(String)
     """Expense entry notes"""
 
-    invoice_id = Column(Integer, ForeignKey('invoices.id'))
+    invoice_id = Column(Integer, ForeignKey('invoices.id'), primary_key=True)
 
     linked_invoice = relationship('Invoice', back_populates="linked_expense") # type: Invoice
 

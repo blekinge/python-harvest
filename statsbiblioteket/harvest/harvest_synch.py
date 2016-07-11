@@ -10,13 +10,14 @@ from sqlalchemy.sql.ddl import CreateTable
 from sqlalchemy.sql.elements import and_
 
 from statsbiblioteket.harvest import Harvest
-from statsbiblioteket.harvest.harvest_types import HarvestDBType, User, Project, \
-    Task, Client, TaskAssignment, DayEntry, Expense
+
+from statsbiblioteket.harvest.harvest_types import DayEntry, Project, Task, \
+    User, Expense, HarvestDBType, Client, TaskAssignment
 
 
 def create_parser():
     parser = argparse.ArgumentParser(
-            description='Backups all harvest data from your harvest domain to a sqlLite database', )
+            description='Backups all harvest data from your harvest domain to a SQL database', )
     parser.add_argument('--domain', action='store', required=True,
                         help='The Harvest domain to backup',
                         dest='harvestDomain')
@@ -24,7 +25,7 @@ def create_parser():
                         help='The harvest user to connect as',
                         dest='harvestUser')
     parser.add_argument('--password', action='store', required=False,
-                        help='The harvest password. If not specified, the username and password is read from the file ~/.harvest, in the format "username=password"',
+                        help='The harvest password.\n If not specified, the username and password is read from the file ~/.harvest, in the format "username=password"',
                         dest='harvestPassword')
 
     parser.add_argument('--sql', action='store', default='sqlite:///data.db',
@@ -86,51 +87,38 @@ def backup(args, harvest_user, harvest_pass):
 
     session = session_maker()  # type: Session
 
-    harvest = Harvest.basic(uri=args.harvestDomain, email=harvest_user,
-                            password=harvest_pass)
+    harvest_client = Harvest.basic(
+            uri=args.harvestDomain,
+            email=harvest_user,
+            password=harvest_pass) # type: Harvest
 
     # Determine modules, for what not to back up
-    who_am_i = harvest.who_am_i
-    backup_expenses = who_am_i['company']['modules']['expenses']
-    backup_invoices = who_am_i['company']['modules']['invoices']
+    who_am_i = harvest_client.who_am_i
+    # True/false if we have installed this module
+    backup_expenses = who_am_i['company']['modules']['expenses'] or False
+    backup_invoices = who_am_i['company']['modules']['invoices'] or False
 
     # printDDL(engine)
 
     # Create the tables that are missing
-    HarvestDBType.metadata.create_all(engine)
+    harvest_client.HarvestDBType.metadata.create_all(engine)
 
-    session.query(User).delete()
-    users = harvest.users()
-    session.add_all(users)
-    session.flush()
-
-    session.query(Project).delete()
-    projects = harvest.projects()
-    session.add_all(projects)
-    session.flush()
-
-    session.query(Task).delete()
-    tasks = harvest.tasks()
-    session.add_all(tasks)
-    session.flush()
-
-    session.query(Client).delete()
-    clients = harvest.clients()
-    session.add_all(clients)
-    session.flush()
+    users = recreate(session, User, harvest_client.users)
+    projects = recreate(session, Project, harvest_client.projects)
+    tasks = recreate(session, Task, harvest_client.tasks)
+    clients = recreate(session, Client, harvest_client.clients)
 
     for project in projects:
         # Get Tasks for each project
         session.query(TaskAssignment).delete()
-        tasks_for_project = harvest.get_all_tasks_from_project(project.id)
-        session.add_all(tasks_for_project)
+        tasks_assignmnents_for_project = harvest_client.get_all_tasks_from_project(project.id)
+        session.add_all(tasks_assignmnents_for_project)
         session.flush()
 
         # get Timesheets for each project
-        timesheets = harvest.timesheets_for_project(project_id=project.id,
+        timesheets = harvest_client.timesheets_for_project(project_id=project.id,
                                                     start_date=args.fromDate,
-                                                    end_date=args.toDate.replace(
-                                                        '-', ''), )
+                                                    end_date=args.toDate, )
         session.query(DayEntry).filter(and_(DayEntry.spent_at >= args.fromDate,
                                             DayEntry.spent_at <= args.toDate)).delete()
         session.add_all(timesheets)
@@ -138,17 +126,26 @@ def backup(args, harvest_user, harvest_pass):
 
         if backup_expenses:
             session.query(Expense).delete()
-            expenses = harvest.expenses_for_project(project_id=project.id)
+            expenses = harvest_client.expenses_for_project(project_id=project.id)
             session.add_all(expenses)
             session.flush()
 
     if backup_invoices:
-        invoices = harvest.invoices()
+        invoices = harvest_client.invoices()
         session.add_all(invoices)
 
     session.flush()
     session.commit()
     session.close()
+
+
+def recreate(session, cls, method):
+    session.query(cls).delete()
+    objects = method()
+    session.add_all(objects)
+    session.flush()
+    return objects
+
 
 
 def printDDL(engine):

@@ -1,10 +1,13 @@
 import argparse
 import logging
+import logging.config
 from datetime import datetime, date
 from os.path import expanduser
+from pprint import pformat
 
 import sqlalchemy
 import sqlalchemy.orm
+import typing
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.sql.ddl import CreateTable
 from sqlalchemy.sql.elements import and_
@@ -12,7 +15,9 @@ from sqlalchemy.sql.elements import and_
 from statsbiblioteket.harvest import Harvest
 
 from statsbiblioteket.harvest.harvest_types import DayEntry, Project, Task, \
-    User, Expense, HarvestDBType, Client, TaskAssignment
+    User, Expense, HarvestDBType, Client, TaskAssignment, HarvestType, Invoice
+
+logger = logging.getLogger(__name__)
 
 
 def create_parser():
@@ -43,7 +48,7 @@ def create_parser():
     parser.add_argument('--logLevel', default='DEBUG',
                         help='the log level (default: %(default)s)',
                         dest='loglevel')
-    parser.add_argument('--logFile', default='log.log',
+    parser.add_argument('--logFile', default='log.ini',
                         help='the log file (default: %(default)s)',
                         dest='logfile')
 
@@ -72,9 +77,7 @@ def main():
         harvest_user = args.harvestUser
         harvest_pass = args.harvestPassword
 
-    logging.basicConfig(filename=args.logfile,
-                        level=getattr(logging, args.loglevel.upper()))
-    logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+    logging.config.fileConfig(fname=args.logfile)
 
     backup(args, harvest_user, harvest_pass)
 
@@ -101,48 +104,68 @@ def backup(args, harvest_user, harvest_pass):
     # printDDL(engine)
 
     # Create the tables that are missing
-    harvest_client.HarvestDBType.metadata.create_all(engine)
+    HarvestDBType.metadata.create_all(engine)
 
-    users = recreate(session, User, harvest_client.users)
-    projects = recreate(session, Project, harvest_client.projects)
-    tasks = recreate(session, Task, harvest_client.tasks)
-    clients = recreate(session, Client, harvest_client.clients)
+    recreate(session, User, harvest_client.users())
+    projects = recreate(session, Project, harvest_client.projects())
+    recreate(session, Task, harvest_client.tasks())
+    recreate(session, Client, harvest_client.clients())
 
     for project in projects:
         # Get Tasks for each project
-        session.query(TaskAssignment).delete()
-        tasks_assignmnents_for_project = harvest_client.get_all_tasks_from_project(project.id)
-        session.add_all(tasks_assignmnents_for_project)
-        session.flush()
+        logger.info("For Project %s", project.name)
+        task_assignments = recreate(session,
+                                    TaskAssignment,
+                                    harvest_client.get_all_tasks_from_project(project.id),
+                                    project.id)
 
         # get Timesheets for each project
-        timesheets = harvest_client.timesheets_for_project(project_id=project.id,
-                                                    start_date=args.fromDate,
-                                                    end_date=args.toDate, )
-        session.query(DayEntry).filter(and_(DayEntry.spent_at >= args.fromDate,
-                                            DayEntry.spent_at <= args.toDate)).delete()
-        session.add_all(timesheets)
-        session.flush()
+        timesheets = harvest_client.timesheets_for_project(
+            project_id=project.id,
+                start_date=args.fromDate,
+            end_date=args.toDate, )
+        update_timesheets(session,
+                          timesheets,
+                          fromDate=args.fromDate,
+                          toDate=args.toDate,
+                          project_id=project.id)
 
         if backup_expenses:
-            session.query(Expense).delete()
-            expenses = harvest_client.expenses_for_project(project_id=project.id)
-            session.add_all(expenses)
-            session.flush()
+            logger.info("Getting expenses for project %s", project.name)
+            recreate(session, Expense,
+                                harvest_client.expenses_for_project(
+                                    project_id=project.id))
+
 
     if backup_invoices:
-        invoices = harvest_client.invoices()
-        session.add_all(invoices)
+        recreate(session, Invoice, harvest_client.invoices())
 
     session.flush()
     session.commit()
     session.close()
 
 
-def recreate(session, cls, method):
-    session.query(cls).delete()
-    objects = method()
+def update_timesheets(session:Session, objects, project_id, fromDate, toDate):
+    cls = DayEntry
+    num_deleted = session.query(cls).filter(and_(cls.project_id == project_id,
+                                                 cls.spent_at >= fromDate,
+                                        cls.spent_at <= toDate)).delete()
+    logger.info("%ss: Removed %d objects", cls.__name__,num_deleted,)
+    logger.debug("Adding new objects: \n%s", pformat(objects))
     session.add_all(objects)
+    logger.info("%ss: Added %d objects", cls.__name__, len(objects), )
+    session.flush()
+
+
+def recreate(session: Session, cls: HarvestType, objects: typing.List, project_id = None) -> typing.List:
+    query = session.query(cls)
+    if project_id is not None:
+        query = query.filter(cls.project_id == project_id)
+    num_deleted = query.delete()
+    logger.info("%ss: Removed %d objects", cls.__name__,num_deleted,)
+    logger.debug("Adding new objects: \n%s", pformat(objects))
+    session.add_all(objects)
+    logger.info("%ss: Added %d objects", cls.__name__, len(objects), )
     session.flush()
     return objects
 

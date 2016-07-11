@@ -40,4 +40,5 @@ setup(name='statsbiblioteket.harvest',
             "Topic :: Internet :: WWW/HTTP :: Site Management",
             "Topic :: Utilities", "License :: OSI Approved :: MIT License", ],
         keywords='harvestapp timetracking api', license='MIT License',
-        zip_safe=True, )
+        zip_safe=False,
+      )

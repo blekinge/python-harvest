@@ -12,4 +12,4 @@ Harvest command Line
 .. argparse::
    :module: statsbiblioteket.harvest
    :func: create_parser
-   :prog: harvest
+   :prog: harvest_synch

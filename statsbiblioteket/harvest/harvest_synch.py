@@ -8,16 +8,18 @@ from pprint import pformat
 import sqlalchemy
 import sqlalchemy.orm
 import typing
+
+from os import path
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.sql.ddl import CreateTable
 from sqlalchemy.sql.elements import and_
 
 from statsbiblioteket.harvest import Harvest
-
+from statsbiblioteket.harvest import logger
 from statsbiblioteket.harvest.harvest_types import DayEntry, Project, Task, \
     User, Expense, HarvestDBType, Client, TaskAssignment, HarvestType, Invoice
 
-logger = logging.getLogger(__name__)
+
 
 
 def create_parser():
@@ -57,6 +59,7 @@ def create_parser():
 
 
 def main():
+
     parser = create_parser()
 
     args = parser.parse_args()
@@ -77,7 +80,12 @@ def main():
         harvest_user = args.harvestUser
         harvest_pass = args.harvestPassword
 
-    logging.config.fileConfig(fname=args.logfile)
+    logfile = path.expanduser(path.expandvars(args.logfile))
+    if path.exists(logfile):
+        logging.config.fileConfig(fname=logfile)
+    else:
+        curdir = path.dirname(path.realpath(__file__))
+        logging.config.fileConfig(fname=curdir+'/default_log.ini')
 
     backup(args, harvest_user, harvest_pass)
 
@@ -90,10 +98,8 @@ def backup(args, harvest_user, harvest_pass):
 
     session = session_maker()  # type: Session
 
-    harvest_client = Harvest.basic(
-            uri=args.harvestDomain,
-            email=harvest_user,
-            password=harvest_pass) # type: Harvest
+    harvest_client = Harvest.basic(uri=args.harvestDomain, email=harvest_user,
+                                   password=harvest_pass)  # type: Harvest
 
     # Determine modules, for what not to back up
     who_am_i = harvest_client.who_am_i
@@ -117,7 +123,7 @@ def backup(args, harvest_user, harvest_pass):
         task_assignments = recreate(session,
                                     TaskAssignment,
                                     harvest_client.get_all_tasks_from_project(project.id),
-                                    project.id)
+            project.id)
 
         # get Timesheets for each project
         timesheets = harvest_client.timesheets_for_project(
@@ -133,8 +139,7 @@ def backup(args, harvest_user, harvest_pass):
         if backup_expenses:
             logger.info("Getting expenses for project %s", project.name)
             recreate(session, Expense,
-                                harvest_client.expenses_for_project(
-                                    project_id=project.id))
+                     harvest_client.expenses_for_project(project_id=project.id))
 
 
     if backup_invoices:
@@ -145,15 +150,16 @@ def backup(args, harvest_user, harvest_pass):
     session.close()
 
 
-def update_timesheets(session:Session, objects, project_id, fromDate, toDate):
+def update_timesheets(session: Session, objects, project_id, fromDate, toDate):
     cls = DayEntry
     num_deleted = session.query(cls).filter(and_(cls.project_id == project_id,
-                                                 cls.spent_at >= fromDate,
+             cls.spent_at >= fromDate,
                                         cls.spent_at <= toDate)).delete()
     logger.info("%ss: Removed %d objects", cls.__name__,num_deleted,)
     logger.debug("Adding new objects: \n%s", pformat(objects))
     session.add_all(objects)
     logger.info("%ss: Added %d objects", cls.__name__, len(objects), )
+
     session.flush()
 
 
@@ -166,9 +172,9 @@ def recreate(session: Session, cls: HarvestType, objects: typing.List, project_i
     logger.debug("Adding new objects: \n%s", pformat(objects))
     session.add_all(objects)
     logger.info("%ss: Added %d objects", cls.__name__, len(objects), )
+
     session.flush()
     return objects
-
 
 
 def printDDL(engine):

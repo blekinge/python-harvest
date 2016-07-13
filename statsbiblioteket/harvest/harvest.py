@@ -5,6 +5,7 @@
  (forked from https://github.com/lionheart/python-harvest.git)
  Date: Sat Jan 31 12:17:16 2015
 """
+import logging
 
 from statsbiblioteket.harvest.clients import Clients
 from statsbiblioteket.harvest.contacts import Contacts
@@ -17,6 +18,7 @@ from statsbiblioteket.harvest.tasks import Tasks
 from statsbiblioteket.harvest.timetracking import Timetracking
 from statsbiblioteket.harvest.users import Users
 
+logger = logging.getLogger(__name__)
 
 
 class Harvest(Clients, Contacts, ExpenseCategories, Invoices, Users, Projects,

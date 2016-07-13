@@ -6,7 +6,7 @@ from sqlalchemy.orm.collections import InstrumentedList, InstrumentedSet, \
     InstrumentedDict
 
 from statsbiblioteket.harvest import harvest_types
-from statsbiblioteket.harvest.harvest_types import DayEntry, Day
+from statsbiblioteket.harvest.harvest_types import DayEntry, Day, clean
 
 
 def getOurName(d):
@@ -46,10 +46,7 @@ class HarvestEncoder(JSONEncoder):
     def default(self, o):
         elementName = inflection.underscore(o.__class__.__name__)
         fields = o.__dict__
-        fields = dict((key, value) for key, value in fields.items() if not key.startswith('_')) #Strip out private values
-        fields = dict((key, value) for key, value in fields.items() if not key.startswith('linked_'))  # Strip out sql relationships
-        fields = dict((key, value) for key, value in fields.items() if
-                      not isinstance(value,(InstrumentedList,InstrumentedSet,InstrumentedDict)))  # Strip out sql relationships
-        # fields = dict((key, value) for key, value in fields.items() if value is not None) #Strip out none values
+        fields = clean(fields)
         encoded = {elementName: fields}
         return encoded
+

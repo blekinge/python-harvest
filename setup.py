@@ -12,7 +12,7 @@ requirements = ['requests', 'requests_oauthlib', 'typing', 'inflection',
 test_requirements = ['pytest', 'pytest-runner',]
 
 setup(name='statsbiblioteket.harvest',
-      version='1.1.1rc',
+      version='1.1.2rc',
         description="Harvest api client", long_description=readme,
         url='https://github.com/statsbiblioteket/python-harvest',
         author="Asger Askov Blekinge",

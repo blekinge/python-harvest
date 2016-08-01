@@ -18,6 +18,8 @@ from statsbiblioteket.harvest import Harvest
 from statsbiblioteket.harvest.harvest_types import DayEntry, Project, Task, \
     User, Expense, HarvestDBType, Client, TaskAssignment, HarvestType, Invoice
 
+curdir = path.dirname(path.realpath(__file__))
+
 
 def create_parser():
     parser = argparse.ArgumentParser(
@@ -55,7 +57,7 @@ def create_parser():
     parser.add_argument('--logLevel', default='DEBUG',
                         help='the log level (default: %(default)s)',
                         dest='loglevel')
-    parser.add_argument('--logFile', default='log.ini',
+    parser.add_argument('--logFile', default=curdir+'/default_log.ini',
                         help='the log file (default: %(default)s)',
                         dest='logfile')
 
@@ -89,7 +91,6 @@ def main():
     if path.exists(logfile):
         logging.config.fileConfig(fname=logfile)
     else:
-        curdir = path.dirname(path.realpath(__file__))
         logging.config.fileConfig(fname=curdir+'/default_log.ini')
 
     backup(args, harvest_user, harvest_pass)

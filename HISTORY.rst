@@ -1,6 +1,19 @@
 Changelog
 =========
 
+v1.1.0 (Aug 1, 2016)
+--------------------
+- Created a command line Harvest backup client [abr]
+ - Logging configured for the command line client
+ - Command line documentation added
+
+- All Harvest json blobs gets expanded as full python types [abr]
+ - The python types are annotated with SqlAlchemy for easy database integration
+
+- Harvest client code have been split into specific classes [abr]
+
+- Refactored layout to resemble a project made with cookiecutter [abr]
+
 v1.0.5(unreleased)
 ------------------
 

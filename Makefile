@@ -1,5 +1,6 @@
 .PHONY: clean-pyc clean-build docs help
 .DEFAULT_GOAL := help
+
 define BROWSER_PYSCRIPT
 import os, webbrowser, sys
 try:
@@ -10,6 +11,7 @@ except:
 webbrowser.open("file://" + pathname2url(os.path.abspath(sys.argv[1])))
 endef
 export BROWSER_PYSCRIPT
+
 BROWSER := python -c "$$BROWSER_PYSCRIPT"
 
 help:
@@ -86,13 +88,12 @@ _release-patch:
 release-patch: clean _release-patch deploy _git-push-tags
 
 
-deploy: clean docs ## deploy version to pypi servers
+deploy: clean ## deploy version to pypi servers
 	python setup.py register
 	python setup.py sdist upload
 	python setup.py bdist_wheel upload
-	python setup.py upload_docs
 
-dist: clean docs ## builds source and wheel package
+dist: clean ## builds source and wheel package
 	python setup.py sdist
 	python setup.py bdist_wheel
 	ls -l dist

@@ -28,7 +28,7 @@ from statsbiblioteket.harvest.harvest_types import \
     User
 
 
-__version__ = "__version__ = '1.1.0'"
+__version__ = "__version__ = '1.1.1rc'"
 __author__ = "Asger Askov Blekinge"
 __email__ = "abr@statsbiblioteket.dk"
 __license__ = "MIT License"

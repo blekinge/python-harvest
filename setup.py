@@ -7,7 +7,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = ['requests', 'requests_oauthlib', 'typing', 'inflection',
-    'sqlalchemy', 'argparse']
+    'sqlalchemy', 'argparse', 'python_log_indenter']
 
 test_requirements = ['pytest', 'pytest-runner',]
 
@@ -27,7 +27,7 @@ setup(name='statsbiblioteket.harvest',
         setup_requires=['pytest-runner'],
 
         entry_points={"console_scripts": ['harvest = '
-                                          'statsbiblioteket.harvest.harvest_synch'
+                                          'statsbiblioteket.harvest.synch.harvest_synch'
                                           ':main']},
 
         # http://pypi.python.org/pypi?:action=list_classifiers

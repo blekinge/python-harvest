@@ -10,9 +10,6 @@ from statsbiblioteket.harvest.harvest \
     import \
     Harvest, logger
 
-from statsbiblioteket.harvest.harvest_synch \
-    import \
-    create_parser # This import is important for the sphinx-argparse docs
 
 # Types
 from statsbiblioteket.harvest.harvest_types import \

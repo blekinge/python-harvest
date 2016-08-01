@@ -2,8 +2,8 @@
 python-harvest
 ===============================
 
-.. image:: https://img.shields.io/pypi/v/statsbiblioteket.python-harvest.svg
-        :target: https://pypi.python.org/pypi/statsbiblioteket.python-harvest
+.. image:: https://img.shields.io/pypi/v/statsbiblioteket.harvest.svg
+        :target: https://pypi.python.org/pypi/statsbiblioteket.harvest
 
 .. image:: https://img.shields.io/travis/statsbiblioteket/python-harvest.svg
         :target: https://travis-ci.org/statsbiblioteket/python-harvest

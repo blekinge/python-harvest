@@ -9,7 +9,7 @@ python-harvest
         :target: https://travis-ci.org/statsbiblioteket/python-harvest
 
 .. image:: https://readthedocs.org/projects/python-harvest/?version=latest
-        :target: https://readthedocs.org/projects/python-harvest/?badge=latest
+        :target: https://readthedocs.org/projects/python-harvest/badge/?version=latest
         :alt: Documentation Status
 
 

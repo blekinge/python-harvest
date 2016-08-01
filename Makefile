@@ -85,7 +85,7 @@ _release-patch:
 release-patch: clean _release-patch deploy _git-push-tags
 
 
-deploy:
+deploy: clean docs ## deploy version to pypi servers
 	python setup.py register
 	python setup.py sdist upload
 	python setup.py bdist_wheel upload
@@ -99,5 +99,5 @@ dist: clean docs ## builds source and wheel package
 install: clean ## install the package to the active Python's site-packages
 	python setup.py install
 
-develop:
+develop: ## Install development dependencies
 	pip install -U -r requirements_dev.txt

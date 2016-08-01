@@ -30,13 +30,13 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/blekinge/python-harvest
+    $ git clone git://github.com/statsbiblioteket/python-harvest
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl  -OL https://github.com/blekinge/python-harvest/tarball/master
+    $ curl  -OL https://github.com/statsbiblioteket/python-harvest/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -45,5 +45,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/blekinge/python-harvest
-.. _tarball: https://github.com/blekinge/python-harvest/tarball/master
+.. _Github repo: https://github.com/statsbiblioteket/python-harvest
+.. _tarball: https://github.com/statsbiblioteket/python-harvest/tarball/master

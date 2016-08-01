@@ -20,7 +20,8 @@ clean: clean-build clean-pyc clean-test clean-docs
 
 clean-docs: ## remove build docs
 	rm -f docs/statsbiblioteket.rst
-	rm -f docs/statsbiblioteket.github_cloner.rst
+	rm -f docs/statsbiblioteket.harvest.rst
+	rm -f docs/statsbiblioteket.harvest.synch.rst
 	rm -f docs/modules.rst
 	$(MAKE) -C docs clean
 

@@ -14,7 +14,7 @@ test_requirements = ['pytest', 'pytest-runner',]
 setup(name='statsbiblioteket.harvest',
       version='1.1.1rc',
         description="Harvest api client", long_description=readme,
-        url='https://github.com/blekinge/python-harvest',
+        url='https://github.com/statsbiblioteket/python-harvest',
         author="Asger Askov Blekinge",
         author_email='asger.askov.blekinge@gmail.com',
 

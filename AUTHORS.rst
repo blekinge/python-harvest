@@ -10,4 +10,5 @@ Development Lead
 Contributors
 ------------
 
-None yet. Why not be the first?
+* Based on work by Jonathan Hosmer in https://github.com/lionheart/python-harvest.git
+* which is based on work by Alex Goretoy <alex@goretoy.com>

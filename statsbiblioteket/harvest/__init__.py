@@ -29,10 +29,8 @@ from statsbiblioteket.harvest.harvest_types import \
 
 
 __version__ = "1.0.4"
-__author__ = "Alex Goretoy"
-__copyright__ = "Copyright 2012, Alex Goretoy"
-__maintainer__ = "Alex Goretoy"
-__email__ = "alex@goretoy.com"
+__author__ = "Asger Askov Blekinge"
+__email__ = "abr@statsbiblioteket.dk"
 __license__ = "MIT License"
 
 

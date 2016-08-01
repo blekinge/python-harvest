@@ -8,8 +8,8 @@ python-harvest
 .. image:: https://img.shields.io/travis/statsbiblioteket/python-harvest.svg
         :target: https://travis-ci.org/statsbiblioteket/python-harvest
 
-.. image:: https://readthedocs.org/projects/python-harvest/?version=latest
-        :target: https://readthedocs.org/projects/python-harvest/badge/?version=latest
+.. image:: https://readthedocs.org/projects/python-harvest/badge/?version=latest
+        :target: http://python-harvest.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
 

@@ -6,10 +6,8 @@ from time import time
 import pytest
 
 from statsbiblioteket.harvest import Harvest
-from statsbiblioteket.harvest.harvest_types import Day
-from statsbiblioteket.harvest.harvest_types import Project
-from statsbiblioteket.harvest.rest import HarvestEncoder
-from statsbiblioteket.harvest.encoding import json_type_hook, HarvestEncoder
+from statsbiblioteket.harvest.harvest_types import Day, json_to_harvest
+from statsbiblioteket.harvest.rest import TypeToJSON
 
 sys.path.insert(0, sys.path[0] + "/..")
 
@@ -58,7 +56,7 @@ class TestHarvest():
         # load as object and decode back to json
         with open(curdir+'/client.json', 'r') as clientjson:
             pythonObjectStructure = json.load(clientjson,
-                                              object_hook=json_type_hook)
+                                              object_hook=json_to_harvest)
 
-            redumped = json.dumps(pythonObjectStructure, cls=HarvestEncoder, sort_keys=True)
+            redumped = json.dumps(pythonObjectStructure, cls=TypeToJSON, sort_keys=True)
         assert pure == redumped

@@ -124,11 +124,7 @@ class TestBackup:
         my_id = me['user']['id']
         me_as_user = session.query(User).filter_by(id=my_id).first() # type: User
 
-
-
         assert me_as_user.email == me['user']['email']
-
-
 
 
 pass

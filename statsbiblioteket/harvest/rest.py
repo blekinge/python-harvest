@@ -5,7 +5,7 @@ import os
 import requests
 from requests_oauthlib import OAuth2Session
 
-from statsbiblioteket.harvest.encoding import json_type_hook, HarvestEncoder
+from statsbiblioteket.harvest.harvest_types import TypeToJSON, json_to_harvest
 
 HARVEST_STATUS_URL = 'http://www.harveststatus.com/api/v2/status.json'
 
@@ -74,9 +74,9 @@ class Rest(object):
 
         url = '{uri}{path}'.format(uri=self.uri, path=path)
 
-        jsonData = json.dumps(data, cls=HarvestEncoder)
-        # print(jsonData)
-        resp = self._session.request(method=method, url=url, data=jsonData,
+        json_data = json.dumps(data, cls=TypeToJSON)
+
+        resp = self._session.request(method=method, url=url, data=json_data,
                                      params=params)
         try:
             resp.raise_for_status()
@@ -87,7 +87,7 @@ class Rest(object):
             return os.path.basename(resp.headers['location'])
 
         if 'DELETE' not in method:
-            return resp.json(object_hook=json_type_hook)
+            return resp.json(object_hook=json_to_harvest)
         else:
             return resp.text
 

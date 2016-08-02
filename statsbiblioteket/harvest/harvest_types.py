@@ -1,50 +1,111 @@
 import logging
-from collections import OrderedDict
+import typing
+from json import JSONEncoder
 from pprint import pformat
 from typing import List
 
-
-# From http://docs.sqlalchemy.org/en/rel_1_0/orm/tutorial.html
 import inflection
-from sqlalchemy.ext.declarative import declarative_base
+import sys
 from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.collections import InstrumentedList, InstrumentedSet, \
     InstrumentedDict
 
+_module_name = sys.modules[__name__]
 
 
-def cleanPrivates(fields):
+def json_to_harvest(json_dict: typing.Dict):
+    """
+    If possible, convert the json dictionary to a harvest type object
+    :param json_dict: The json dict
+    :return: A harvest type object, or the json dictionary, if no harvest type
+    was found
+    """
+    if len(json_dict) == 1:  # Just one value
+        (first_key, _), = json_dict.items()
+
+        class_name = inflection.camelize(first_key)
+
+        class_ = getattr(_module_name, class_name)
+
+        return class_(**json_dict[first_key])
+
+    if 'for_day' in json_dict and 'day_entries' in json_dict:
+        # Special handling for Day
+
+        day_entries_json = json_dict['day_entries']
+
+        day_entries = [DayEntry(**day_entry_fields) for day_entry_fields in
+                       day_entries_json or []]
+
+        json_dict['day_entries'] = day_entries
+
+        return Day(**json_dict)
+
+    return json_dict
+
+
+def remove_private_fields(fields: typing.Dict) -> typing.Dict:
+    """
+    Remove fields whose key start with _ (indicating private-ness)
+    :param fields: the fields to clean
+    :return: a copy of fields, without the private keys
+    """
     fields = dict((key, value) for key, value in fields.items() if
                   not key.startswith('_'))  # Strip out private values
     return fields
 
-def cleanSQL(fields):
+
+class TypeToJSON(JSONEncoder):
+    """
+    Class to encode the harvest type objects as json
+    """
+    def default(self, object_to_encode):
+        key = inflection.underscore(object_to_encode.__class__.__name__)
+        values = object_to_encode.__dict__
+        values = remove_private_fields(values)
+        values = remove_sqlalchemy_fields(values)
+
+        encoded = {key: values}
+        return encoded
+
+
+def remove_sqlalchemy_fields(fields: typing.Dict) -> typing.Dict:
+    """
+    Remove fields added by SQL Alchemy
+    :param fields: the fields to clean
+    :return: a copy of fields, without the sql alchemy keys
+    """
     fields = dict((key, value) for key, value in fields.items() if
                   not key.startswith('linked_'))  # Strip out sql relationships
     fields = dict((key, value) for key, value in fields.items() if
-              not isinstance(value, (InstrumentedList, InstrumentedSet,
-                                     InstrumentedDict)))  # Strip out
+                  not isinstance(value, (InstrumentedList, InstrumentedSet,
+                                         InstrumentedDict)))  # Strip out
     # sql relationships
     return fields
 
 
-def clean(fields):
-    fields = cleanPrivates(fields)
-    fields = cleanSQL(fields)
-    return fields
-
-def cleanNones(fields):
-    fields = dict((key, value) for key, value in fields.items() if value
-     is not None) #Strip out none values
+def remove_fields_with_value_none(fields: typing.Dict) -> typing.Dict:
+    """
+    Remove keys whose value is none
+    :param fields: the fields to clean
+    :return: a copy of fields, without the none values
+    """
+    fields = dict((key, value) for key, value in fields.items() if
+                  value is not None)  # Strip out none values
     return fields
 
 
 class HarvestType(object):
+    """
+    Base class of all the HarvestType objects
+    """
+
     def __eq__(self, other):
         if type(other) is type(self):
-            myself = cleanNones(clean(self.__dict__))
-            him = cleanNones(clean(other.__dict__))
+            myself = remove_fields_with_value_none(clean(self.__dict__))
+            him = remove_fields_with_value_none(clean(other.__dict__))
             return myself == him
         return False
 
@@ -61,7 +122,9 @@ class HarvestType(object):
 
     def __repr__(self, *args, **kwargs):
         name = inflection.underscore(self.__class__.__name__)
-        values = clean(self.__dict__)
+        values = self.__dict__
+        values = remove_private_fields(values)
+        values = remove_sqlalchemy_fields(values)
         return pformat({name : values})
 
     def __str__(self, *args, **kwargs):
@@ -70,6 +133,7 @@ class HarvestType(object):
             return self.name
         else:
             super(HarvestType, self).__str__(args,kwargs)
+
 
 def _lenient_constructor (self, **kwargs):
     """A simple constructor that allows initialization from kwargs.
@@ -89,7 +153,6 @@ def _lenient_constructor (self, **kwargs):
             setattr(self, '_'+key, kwargs[key])
         else:
             setattr(self, key, kwargs[key])
-
 
 
 HarvestDBType = declarative_base(cls=HarvestType, constructor=_lenient_constructor)
@@ -181,6 +244,7 @@ class User(HarvestDBType):
         return '{firstName} {lastName} <{email}>'.format(
              firstName=self.first_name, lastName=self.last_name,
              email=self.email)
+
 
 class Project(HarvestDBType):
     """
@@ -296,6 +360,7 @@ class Project(HarvestDBType):
 
     linked_client = relationship('Client',back_populates='linked_projects') # type: Client
 
+
 class Client(HarvestDBType):
     """
     Data class for Harvest Users.
@@ -366,6 +431,7 @@ class Client(HarvestDBType):
     linked_invoices = relationship('Invoice', back_populates='linked_client') # type: List[Invoice]
 
     linked_projects = relationship('Project', back_populates='linked_client') # type: List[Project]
+
 
 class DayEntry(HarvestDBType):
     """
@@ -561,8 +627,6 @@ class Task(HarvestDBType):
 
     linked_day_entries = relationship('DayEntry',
                                back_populates="linked_task")  # type: List[DayEntry]
-
-
 
 
 class Contact(HarvestDBType):

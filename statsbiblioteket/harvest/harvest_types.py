@@ -7,6 +7,8 @@ from typing import List
 import inflection
 import sys
 from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey
+from sqlalchemy import DateTime
+from sqlalchemy import func
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.collections import InstrumentedList, InstrumentedSet, \
@@ -104,9 +106,17 @@ class HarvestType(object):
 
     def __eq__(self, other):
         if type(other) is type(self):
-            myself = remove_fields_with_value_none(clean(self.__dict__))
-            him = remove_fields_with_value_none(clean(other.__dict__))
-            return myself == him
+            him = self.__dict__
+            him = remove_private_fields(him)
+            him = remove_sqlalchemy_fields(him)
+            him = remove_fields_with_value_none(him)
+
+            her = other.__dict__
+            her = remove_private_fields(her)
+            her = remove_sqlalchemy_fields(her)
+            her = remove_fields_with_value_none(her)
+
+            return him == her
         return False
 
     def __ne__(self, other):
@@ -155,7 +165,17 @@ def _lenient_constructor (self, **kwargs):
             setattr(self, key, kwargs[key])
 
 
-HarvestDBType = declarative_base(cls=HarvestType, constructor=_lenient_constructor)
+HarvestDeclarativeType = declarative_base(cls=HarvestType, constructor=_lenient_constructor)
+
+
+class HarvestDBType(HarvestDeclarativeType):
+
+    __abstract__ = True
+
+    _created_on = Column(DateTime, server_default=func.now())
+    _updated_on = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    pass
 
 
 class User(HarvestDBType):

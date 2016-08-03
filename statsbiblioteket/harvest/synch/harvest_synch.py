@@ -5,18 +5,18 @@ import typing
 from datetime import datetime, date
 from os import path
 from os.path import expanduser
-from pprint import pformat
 
 import inflection
 import sqlalchemy
 import sqlalchemy.orm
+from sqlalchemy import func
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.sql.ddl import CreateTable
 
-from statsbiblioteket.harvest.synch import logger
 from statsbiblioteket.harvest import Harvest
 from statsbiblioteket.harvest.harvest_types import DayEntry, Project, Task, \
-    User, Expense, HarvestDBType, Client, TaskAssignment, HarvestType, Invoice
+    User, Expense, HarvestDBType, Client, TaskAssignment, Invoice
+from statsbiblioteket.harvest.synch import logger
 
 curdir = path.dirname(path.realpath(__file__))
 
@@ -98,98 +98,137 @@ def main():
     logging.shutdown()
 
 
+
+
 def backup(args, harvest_user, harvest_pass):
+
+    # Initialise sql alchemy
     engine = sqlalchemy.create_engine(args.dbConnectString)
     session_maker = sessionmaker(bind=engine)
 
-    session = session_maker()  # type: Session
+    session = session_maker() # type: Session
+    try:
+        # Create the tables that are missing
+        HarvestDBType.metadata.create_all(engine)
 
-    hrvst = Harvest.basic(uri=args.harvestDomain, email=harvest_user,
-                                   password=harvest_pass)  # type: Harvest
+        #Connect to Harvest
+        hrvst = Harvest.basic(uri=args.harvestDomain, email=harvest_user,
+                                       password=harvest_pass)  # type: Harvest
 
-    # Determine modules, for what not to back up
-    who_am_i = hrvst.who_am_i
-    # True/false if we have installed this module
-    backup_expenses = who_am_i['company']['modules']['expenses'] or False
-    backup_invoices = who_am_i['company']['modules']['invoices'] or False
+        # Determine modules, for what not to back up
+        who_am_i = hrvst.who_am_i
+        # True/false if we have installed this module
+        backup_expenses = who_am_i['company']['modules']['expenses'] or False
+        backup_invoices = who_am_i['company']['modules']['invoices'] or False
 
-    # printDDL(engine)
+        # printDDL(engine)
 
-    # Create the tables that are missing
-    HarvestDBType.metadata.create_all(engine)
+        # Backup the User, Task and Client lists. These are usually very short
+        upsert(session, User, hrvst.users())
+        upsert(session, Task, hrvst.tasks())
+        upsert(session, Client, hrvst.clients())
 
-    recreate(session, User, hrvst.users())
-    projects = recreate(session, Project, hrvst.projects())
-    recreate(session, Task, hrvst.tasks())
-    recreate(session, Client, hrvst.clients())
+        # If the invoice module is enabled, back up invoices
+        if backup_invoices:
+            upsert(session, Invoice, hrvst.invoices())
 
-    for project in projects:
-        # Get Tasks for each project
-        logger.info("For Project %s", project.name)
-        logger.add()
+        # Backup and store the projects list
+        projects = upsert(session, Project, hrvst.projects())
 
-        task_assignments = hrvst.get_all_tasks_from_project(project.id)
-        recreate(session, TaskAssignment, task_assignments,
-                 TaskAssignment.project_id == project.id)
+        from_date = args.fromDate
+        to_date = args.toDate
+        for project in projects: # For each Project
+            logger.info("For Project %s", project.name)
+            logger.add() # Indent the log statements
 
-        # get Timesheets for each project
-        timesheets = hrvst.timesheets_for_project(project.id,
-                                                  start_date=args.fromDate,
-                                                  end_date=args.toDate, )
-        recreate(session, DayEntry, timesheets,
-                 DayEntry.project_id == project.id,
-                 DayEntry.spent_at >= args.fromDate,
-                 DayEntry.spent_at <= args.toDate)
+            # Get Tasks for each project and store them
+            task_assignments = hrvst.get_all_tasks_from_project(project.id)
+            upsert(session, TaskAssignment, task_assignments)
 
-        if backup_expenses:
-            recreate(session, Expense, hrvst.expenses_for_project(project.id),
-                     Expense.project_id == project.id)
-        logger.sub()
+            # Get Expenses for each project and store them
+            if backup_expenses: # Only if the expenses module is enabled
+                upsert(session, Expense, hrvst.expenses_for_project(project.id))
 
-    if backup_invoices:
-        recreate(session, Invoice, hrvst.invoices())
+            # get Timesheets for each project and store them
+            timesheets = hrvst.timesheets_for_project(project.id,
+                                                      start_date=from_date,
+                                                      end_date=to_date)
+            upsert(session, DayEntry, timesheets)
 
-    session.flush()
-    session.commit()
-    session.close()
+            logger.sub() # Remove log indent
+
+        #Flush changes to be sure they are available for the following queries
+        session.flush()
+
+        # Each object have a database maintained _updated_at datetime field. When the object
+        # is upsert'ed as above, this field is set to start_timestamp.
+        # For all tables (except DayEntry) we can now remove all objects which where the
+        # _updated_at field is less than the start_timestamp
+        archive_untouched_rows(session, User)
+        archive_untouched_rows(session, Project)
+        archive_untouched_rows(session, Task)
+        archive_untouched_rows(session, Client)
+        archive_untouched_rows(session, TaskAssignment)
+        archive_untouched_rows(session, Expense)
+        archive_untouched_rows(session, Invoice)
+
+        # All DayEntries outside the given range is marked as updated, to prevent
+        # them from being archived
+        mark_timesheets_as_updated(session, DayEntry, from_date,
+                                   to_date)
+        #Now, all DayEntries outside the from_date->to_date range are marked as updated, and
+        # all which we got from harvest are marked as updated. Any that remains are
+        # entries in the given range, which NO LONGER exist in Harvest. These
+        # should be archived
+        archive_untouched_rows(session, DayEntry)
+
+        session.commit()
+    finally:
+        session.close()
 
 
-def recreate(session: Session, cls: HarvestType, objects: typing.Set,
-             project_id=None, *criterion) -> typing.Set:
+def archive_untouched_rows(session: Session, cls: HarvestDBType):
     """
-    Upserts the given objects in the database and removes any objects not given.
-    To elaborate, all objects of the same type, matching the project_id, if given
-    and any other criterion will be deleted, if they are not present in
+    'Archives' the untouched rows
     :param session: The database session
-    :param cls: The class of the objects (which implicitly denote the sql table)
-    :param objects: The objects to create
-    :param project_id: The project id
-    :param criterion: Other criterion for the delete
+    :param cls:
+    :return:
+    """
+    untouched_rows = session.query(cls).filter(
+        cls._updated_on < func.now()).all()
+    map(session.delete, untouched_rows)
+
+
+def mark_timesheets_as_updated(session: Session, cls: DayEntry, from_date, to_date):
+    old_rows = session.query(cls).filter(
+        (cls._updated_on < func.now()) & (
+            (cls.spent_at < from_date) | (cls.spent_at > to_date))).all()
+    for old_row in old_rows:
+        old_row._updated_at = func.now()
+
+
+
+def upsert(session: Session, cls: HarvestDBType, harvest_objects: typing.Set[HarvestDBType]) -> typing.Set[HarvestDBType]:
+    """
+    Upserts the given objects in the database
+    :param session: The database session
+    :param cls: The class of the objects (which implicitly denote the sql
+    table)
+    :param harvest_objects: The objects to create or update in the database
     :return: The updated objects
     """
-    query = session.query(cls)
-    if project_id is not None and hasattr(cls, 'project_id'):
-        query = query.filter(cls.project_id == project_id)
-    query = query.filter(*criterion)
-    existing = set(query.all())
+    class_name = inflection.pluralize(cls.__name__) #Used for log messages
 
-    toDelete = existing.difference(set(objects))
-    for dbObj in toDelete:
-        session.delete(dbObj)
-
-    classname = inflection.pluralize(cls.__name__)
-    logger.info("%s: Removed %d objects", classname, len(toDelete))
-
-    logger.info("%s: Merging %d harvest objects with database", classname, len(objects))
-    updates = 0
-    for object in objects:
-        result = session.merge(object)
-        if session.is_modified(result):
-            updates += 1
-    logger.info("%s: Added/updated %d objects", classname, updates)
+    logger.info("%s: Merging %d harvest objects with database", class_name, len(harvest_objects))
+    db_objects = set()
+    for harvest_object in harvest_objects:
+        db_object = session.merge(harvest_object) # type: HarvestDBType
+        db_objects.add(db_object)
+        #Mark as updated so it wont get cleaned
+        db_object._updated_on = func.now()
 
     session.flush()
-    return objects
+    return db_objects
 
 
 def printDDL(engine):

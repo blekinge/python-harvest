@@ -16,6 +16,7 @@ from sqlalchemy.sql.ddl import CreateTable
 from statsbiblioteket.harvest import Harvest
 from statsbiblioteket.harvest.harvest_types import DayEntry, Project, Task, \
     User, Expense, HarvestDBType, Client, TaskAssignment, Invoice
+from statsbiblioteket.harvest.orm_types import versioned_session
 from statsbiblioteket.harvest.synch import logger
 
 curdir = path.dirname(path.realpath(__file__))
@@ -138,6 +139,8 @@ def backup(args, harvest_user, harvest_pass):
     session_maker = sessionmaker(bind=engine)
 
     session = session_maker() # type: Session
+    versioned_session(session)
+
     try:
         # Create the tables that are missing
         HarvestDBType.metadata.create_all(engine)
@@ -221,6 +224,7 @@ def backup(args, harvest_user, harvest_pass):
 def archive_untouched_rows(session: Session, cls: HarvestDBType):
     """
     'Archives' the untouched rows
+    TODO make this save old versions rather than just deleting them
     :param session: The database session
     :param cls:
     :return:

@@ -5,7 +5,8 @@ import os
 import requests
 from requests_oauthlib import OAuth2Session
 
-from statsbiblioteket.harvest.harvest_types import TypeToJSON, json_to_harvest
+from statsbiblioteket.harvest.harvest_types import json_to_harvest
+from statsbiblioteket.harvest.orm_types import TypeToJSON
 
 HARVEST_STATUS_URL = 'http://www.harveststatus.com/api/v2/status.json'
 

@@ -34,8 +34,9 @@ def create_parser():
     parser.add_argument('--password', action='store', required=False,
                         help='The harvest password.\n If not specified, '
                              'the username and password is read from the '
-                             'file ~/.harvest, in the format '
-                             '"username=password"', dest='harvestPassword')
+                             'file ~/.harvest\nThe format of this file is \n'
+                             '"username=value\n'
+                             'password=value"', dest='harvestPassword')
 
     parser.add_argument('--sql', action='store', default='sqlite:///data.db',
                         help='The sql connect string (default: %('
@@ -71,33 +72,63 @@ def main():
 
     args = parser.parse_args()
 
-    harvest_user = None
-    harvest_pass = None
-    if not args.harvestPassword:
-        with open(expanduser('~/.harvest')) as harvestPassFile:
-            lines = harvestPassFile.readlines()
-            for line in lines:
-                if line.startswith("#") or line.isspace():
-                    continue
-                parts = line.strip().split("=", maxsplit=1)
-                harvest_user = parts[0]
-                harvest_pass = parts[1]
+    setup_logging(args)
 
-    else:
-        harvest_user = args.harvestUser
-        harvest_pass = args.harvestPassword
+    harvest_pass, harvest_user = get_harvest_credentials(args)
 
-    logfile = path.expanduser(path.expandvars(args.logfile))
-    if path.exists(logfile):
-        logging.config.fileConfig(fname=logfile)
-    else:
-        logging.config.fileConfig(fname=curdir+'/default_log.ini')
 
     backup(args, harvest_user, harvest_pass)
 
     logging.shutdown()
 
 
+def setup_logging(args):
+    logfile = path.expanduser(path.expandvars(args.logfile))
+    if path.exists(logfile):
+        logging.config.fileConfig(fname=logfile)
+    else:
+        logging.config.fileConfig(fname=curdir + '/default_log.ini')
+
+
+def get_harvest_credentials(args):
+    """
+        specifies a file that contains a username andr password. The format of the file is:
+        username=value
+        password=value
+
+        This is preferred over specifying the username and password on the command line
+
+    :param args:
+    :return:
+    :link https://www.samba.org/samba/docs/man/manpages-3/mount.cifs.8.html
+
+    """
+
+    cred_file = '~/.harvest'
+    harvest_user = None
+    harvest_pass = None
+    if not args.harvestPassword:
+        with open(expanduser(cred_file)) as harvestPassFile:
+            lines = harvestPassFile.readlines()
+            for line in lines:
+                line = line.strip()
+                if line.startswith("#") or line.isspace():
+                    continue
+
+                parts = line.split("=", maxsplit=1)
+                if parts[0] == 'username':
+                    harvest_user = parts[1]
+                if parts[0] == 'password':
+                    harvest_pass = parts[1]
+    else:
+        harvest_user = args.harvestUser
+        harvest_pass = args.harvestPassword
+    if harvest_user is None or harvest_pass is None:
+        logger.warn(
+            "Failed to parse harvest credentials from either the command "
+            "line or from {cred_file}".format(
+                cred_file=cred_file))
+    return harvest_pass, harvest_user
 
 
 def backup(args, harvest_user, harvest_pass):

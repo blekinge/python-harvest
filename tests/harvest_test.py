@@ -1,26 +1,17 @@
 import json
 import os
 import sys
-from time import time
 
-import pytest
-
-from statsbiblioteket.harvest import Harvest
 from statsbiblioteket.harvest.harvest_types import Day, json_to_harvest
 from statsbiblioteket.harvest.rest import TypeToJSON
+from tests.test_base import TestBase
 
 sys.path.insert(0, sys.path[0] + "/..")
 
 curdir = os.path.dirname(os.path.realpath(__file__))
 
 
-class TestHarvest():
-    @pytest.fixture()
-    def harvest(self):
-        testCreds = json.load(open(os.path.join(curdir, 'test_creds.json')))
-        harvest = Harvest.basic(
-            testCreds['url'],testCreds['user'],testCreds['password'])
-        return harvest
+class TestHarvest(TestBase):
 
     def test_status_up(self, harvest):
         real = harvest.status()['description']
@@ -29,8 +20,8 @@ class TestHarvest():
 
     def test_status_not_down(self, harvest):
         real = harvest.status()['description']
-        expected = "down"
-        assert real != expected
+        isDown = "down"
+        assert real != isDown
 
     def test_get_today(self, harvest):
         today = harvest.today() # type: Day

@@ -1,12 +1,10 @@
 import argparse
 import logging
 import logging.config
-import typing
 from datetime import datetime, date
 from os import path
 from os.path import expanduser
 
-import inflection
 import sqlalchemy
 import sqlalchemy.orm
 from sqlalchemy import func
@@ -14,8 +12,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.sql.ddl import CreateTable
 
 from statsbiblioteket.harvest import Harvest
-from statsbiblioteket.harvest.harvest_types import DayEntry, Project, Task, \
-    User, Expense, HarvestDBType, Client, TaskAssignment, Invoice
+from statsbiblioteket.harvest.harvest_types import *
 from statsbiblioteket.harvest.orm_types import versioned_session
 from statsbiblioteket.harvest.synch import logger
 
@@ -136,10 +133,12 @@ def backup(args, harvest_user, harvest_pass):
 
     # Initialise sql alchemy
     engine = sqlalchemy.create_engine(args.dbConnectString)
+
     session_maker = sessionmaker(bind=engine)
 
     session = session_maker() # type: Session
     versioned_session(session)
+
 
     try:
         # Create the tables that are missing
@@ -240,7 +239,6 @@ def mark_timesheets_as_updated(session: Session, cls: DayEntry, from_date, to_da
             (cls.spent_at < from_date) | (cls.spent_at > to_date))).all()
     for old_row in old_rows:
         old_row._updated_at = func.now()
-
 
 
 def upsert(session: Session, cls: HarvestDBType, harvest_objects: typing.Set[HarvestDBType]) -> typing.Set[HarvestDBType]:

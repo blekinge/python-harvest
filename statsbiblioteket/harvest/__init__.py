@@ -26,9 +26,6 @@ from statsbiblioteket.harvest.harvest_types import \
     Task, \
     TaskAssignment, \
     User
-from statsbiblioteket.harvest.orm_types import create_mappers
-
-[func() for func in create_mappers]
 
 __version__ = "__version__ = '1.1.3rc'"
 __author__ = "Asger Askov Blekinge"

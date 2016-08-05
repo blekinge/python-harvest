@@ -8,16 +8,27 @@ import inflection
 from sqlalchemy import Table, Column, ForeignKeyConstraint, Integer, DateTime
 from sqlalchemy import event, util
 from sqlalchemy import func
+from sqlalchemy.ext.declarative import DeferredReflection
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy.orm import Mapper
+from sqlalchemy.orm import Session
 from sqlalchemy.orm import class_mapper
 from sqlalchemy.orm import mapper, attributes, object_mapper
+from sqlalchemy.orm.attributes import History
 from sqlalchemy.orm.collections import InstrumentedDict, InstrumentedList, \
     InstrumentedSet
 from sqlalchemy.orm.exc import UnmappedColumnError, UnmappedClassError
 from sqlalchemy.orm.properties import RelationshipProperty
+from sqlalchemy.orm.state import InstanceState
 
-create_mappers = []
+VERSION_COLUMN_NAME = 'version'
+
+
+VERSION_META = "version_meta"
+
+
+UNVERSIONED = "unversioned"
 
 
 def remove_private_fields(fields: typing.Dict) -> typing.Dict:
@@ -35,6 +46,7 @@ class TypeToJSON(JSONEncoder):
     """
     Class to encode the harvest type objects as json
     """
+
     def default(self, object_to_encode):
         key = inflection.underscore(object_to_encode.__class__.__name__)
         values = object_to_encode.__dict__
@@ -107,17 +119,17 @@ class HarvestType(object):
         values = self.__dict__
         values = remove_private_fields(values)
         values = remove_sqlalchemy_fields(values)
-        return pformat({name : values})
+        return pformat({name: values})
 
     def __str__(self, *args, **kwargs):
-        name_attr = getattr(self,'name')
+        name_attr = getattr(self, 'name')
         if name_attr:
             return self.name
         else:
-            super(HarvestType, self).__str__(args,kwargs)
+            super(HarvestType, self).__str__(args, kwargs)
 
 
-def _lenient_constructor (self, **kwargs):
+def _lenient_constructor(self, **kwargs):
     """A simple constructor that allows initialization from kwargs.
 
     Sets attributes on the constructed instance using the names and
@@ -130,60 +142,100 @@ def _lenient_constructor (self, **kwargs):
     cls_ = type(self)
     for key in kwargs:
         if not hasattr(cls_, key):
-            logging.debug("%r is an invalid keyword argument for %s"
-                          % (key, cls_.__name__))
-            setattr(self, '_'+key, kwargs[key])
+            logging.debug("%r is an invalid keyword argument for %s" % (
+            key, cls_.__name__))
+            setattr(self, '_' + key, kwargs[key])
         else:
             setattr(self, key, kwargs[key])
 
 
-def map(cls, *arg, **kw):
+def mymap(cls, *arg, **kw):
     mp = mapper(cls, *arg, **kw)
     _history_mapper(mp)
     return mp
 
 
-HarvestDeclarativeType = declarative_base(cls=HarvestType, mapper=map, constructor=_lenient_constructor)
+HarvestDeclarativeType = declarative_base(cls=HarvestType, mapper=mymap,
+                                          constructor=_lenient_constructor)
 
 
 class HarvestDBType(HarvestDeclarativeType):
-
     __abstract__ = True
-
-    _created_on = Column(DateTime, server_default=func.now())
-    _updated_on = Column(DateTime, server_default=func.now(), onupdate=func.now())
+        # Fix from https://stackoverflow.com/questions/5733113/sqlalchemy-versioning-cares-about-class-import-order?rq=1
 
 
+    @declared_attr
+    def _updated_on(cls):
+        """The _updated_on column lists the timestamp for when this row was
+        last modified. Changes only to this column does not count as
+        a modification of the row"""
+        return Column(DateTime, server_default=func.now(), onupdate=func.now(),
+                      info=UNVERSIONED)
 
 
 
-def col_references_table(col, table):
+
+def col_references_table(col: Column, table: Table):
+    """
+    :param col: The column
+    :param table: the table
+    :return: True if col contains a foreign key from table
+    """
     for fk in col.foreign_keys:
         if fk.references(table):
             return True
     return False
 
 
-def _is_versioning_col(col):
-    return "version_meta" in col.info
+def _is_unversioned(col: Column):
+    """
+    :param col: The column
+    :return: True if the column is annotated as unversioned (info field)
+    """
+    return UNVERSIONED in col.info
 
 
-def _history_mapper(local_mapper):
+def _is_versioning_col(col: Column):
+    """
+    :param col: The column
+    :return: True if the column is annotated as being versioning metadata
+    """
+    return VERSION_META in col.info
+
+
+def _history_mapper(local_mapper: Mapper):
+    """
+    Initialises a history mapper and adds it to the local mapper
+    The responsibility of the mapper is to link SQL tables with columns
+      with python attributes. So, this is used when generating the tables, and
+      not later
+    :param local_mapper: The local mapper
+    :return: None
+    """
+
+    # Get the class of the object to map
     cls = local_mapper.class_
 
     # set the "active_history" flag
     # on on column-mapped attributes so that the old version
     # of the info is always loaded (currently sets it on all attributes)
-    for prop in local_mapper.iterate_properties:
-        getattr(local_mapper.class_, prop.key).impl.active_history = True
+    for prop in local_mapper._prop_set:
+        prop.active_history = True
+        getattr(cls, prop.key).active_history = True
 
     super_mapper = local_mapper.inherits
     super_history_mapper = getattr(cls, '__history_mapper__', None)
 
     polymorphic_on = None
-    super_fks = []
+    super_fks = []  # type: typing.List[(str,str)]
 
-    def _col_copy(col):
+    def _col_copy(col: Column) -> Column:
+        """
+        Copy a column
+
+        :param col: The column to copy
+        :return: the copied column
+        """
         orig = col
         col = col.copy()
         orig.info['history_copy'] = col
@@ -191,27 +243,28 @@ def _history_mapper(local_mapper):
         col.default = col.server_default = None
         return col
 
-    properties = util.OrderedDict()
-    if not super_mapper or \
-            local_mapper.local_table is not super_mapper.local_table:
-        cols = []
-        version_meta = {"version_meta": True}  # add column.info to identify
-                                               # columns specific to versioning
+    properties = util.OrderedDict()  # Mapper properties
+
+    if not super_mapper or local_mapper.local_table is not \
+            super_mapper.local_table:
+
+        # Columns to version
+        cols = []  # type: typing.List[Column]
+        # add column.info to identify columns specific to versioning
+        version_meta = {VERSION_META: True}
 
         for column in local_mapper.local_table.c:
             if _is_versioning_col(column):
                 continue
+            if _is_unversioned(column):
+                continue
 
             col = _col_copy(column)
 
-            if super_mapper and \
-                    col_references_table(column, super_mapper.local_table):
-                super_fks.append(
-                    (
-                        col.key,
-                        list(super_history_mapper.local_table.primary_key)[0]
-                    )
-                )
+            if super_mapper and col_references_table(column,
+                                                     super_mapper.local_table):
+                super_fks.append((col.key, list(
+                    super_history_mapper.local_table.primary_key)[0]))
 
             cols.append(col)
 
@@ -221,41 +274,32 @@ def _history_mapper(local_mapper):
             orig_prop = local_mapper.get_property_by_column(column)
             # carry over column re-mappings
             if len(orig_prop.columns) > 1 or \
-                    orig_prop.columns[0].key != orig_prop.key:
+                            orig_prop.columns[0].key != orig_prop.key:
                 properties[orig_prop.key] = tuple(
                     col.info['history_copy'] for col in orig_prop.columns)
 
         if super_mapper:
-            super_fks.append(
-                (
-                    'version', super_history_mapper.local_table.c.version
-                )
-            )
+            super_fks.append((VERSION_COLUMN_NAME,
+                              super_history_mapper.local_table.c.version))
 
         # "version" stores the integer version id.  This column is
         # required.
-        cols.append(
-            Column(
-                'version', Integer, primary_key=True,
-                autoincrement=False, info=version_meta))
+        cols.append(Column(VERSION_COLUMN_NAME, Integer, primary_key=True,
+                           autoincrement=False, info=version_meta))
 
         # "changed" column stores the UTC timestamp of when the
         # history row was created.
         # This column is optional and can be omitted.
-        cols.append(Column(
-            'changed', DateTime,
-            default=datetime.datetime.utcnow,
-            info=version_meta))
+        cols.append(
+            Column('changed', DateTime, default=datetime.datetime.utcnow,
+                info=version_meta))
 
         if super_fks:
             cols.append(ForeignKeyConstraint(*zip(*super_fks)))
 
-        table = Table(
-            local_mapper.local_table.name + '_history',
-            local_mapper.local_table.metadata,
-            *cols,
-            schema=local_mapper.local_table.schema
-        )
+        table = Table(local_mapper.local_table.name + '_history',
+            local_mapper.local_table.metadata, *cols,
+            schema=local_mapper.local_table.schema)
     else:
         # single table inheritance.  take any additional columns that may have
         # been added and add them to the history table.
@@ -269,61 +313,66 @@ def _history_mapper(local_mapper):
         bases = (super_history_mapper.class_,)
 
         if table is not None:
-            properties['changed'] = (
-                (table.c.changed, ) +
-                tuple(super_history_mapper.attrs.changed.columns)
-            )
+            properties['changed'] = ((table.c.changed,) + tuple(
+                super_history_mapper.attrs.changed.columns))
 
     else:
         bases = local_mapper.base_mapper.class_.__bases__
     versioned_cls = type.__new__(type, "%sHistory" % cls.__name__, bases, {})
 
-    m = mapper(
-        versioned_cls,
-        table,
-        inherits=super_history_mapper,
+    m = mapper(versioned_cls, table, inherits=super_history_mapper,
         polymorphic_on=polymorphic_on,
         polymorphic_identity=local_mapper.polymorphic_identity,
-        properties=properties
-    )
+        properties=properties)
     cls.__history_mapper__ = m
 
     if not super_history_mapper:
         local_mapper.local_table.append_column(
-            Column('version', Integer, default=1, nullable=False)
-        )
-        local_mapper.add_property(
-            "version", local_mapper.local_table.c.version)
+            Column(VERSION_COLUMN_NAME, Integer, default=1, nullable=False))
+        local_mapper.add_property("version",
+            local_mapper.local_table.c.version)
 
 
+def versioned_objects(object_set: typing.Set):
+    """
+    filters out all objects that do not have a history mapper
 
-
-def versioned_objects(iter):
-    for obj in iter:
+    :param object_set: The set of objects to filter
+    :return: a generator of the objects with a history mapper
+    """
+    for obj in object_set:
         if hasattr(obj, '__history_mapper__'):
             yield obj
 
 
-def create_version(obj, session, deleted=False):
-    obj_mapper = object_mapper(obj)
-    history_mapper = obj.__history_mapper__
+def create_version(obj, session: Session, deleted=False):
+    """
+    Create a new version of the object for the session
+
+    :param obj: The object to create a version for
+    :param session: The session
+    :param deleted: If true, the object have been deleted
+    :return:
+    """
+    obj_mapper = object_mapper(obj)  # type: Mapper
+    history_mapper = obj.__history_mapper__ #Get the history mapper from _history_mapper
     history_cls = history_mapper.class_
 
-    obj_state = attributes.instance_state(obj)
+    obj_state = attributes.instance_state(obj)  # type: InstanceState
 
-    attr = {}
+    attr = {}  # Attributes for the version object
 
     obj_changed = False
 
-    for om, hm in zip(
-            obj_mapper.iterate_to_root(),
-            history_mapper.iterate_to_root()
-    ):
+    for om, hm in zip(obj_mapper.iterate_to_root(),
+            history_mapper.iterate_to_root()):
         if hm.single:
             continue
 
         for hist_col in hm.local_table.c:
             if _is_versioning_col(hist_col):
+                continue
+            if _is_unversioned(hist_col):
                 continue
 
             obj_col = om.local_table.c[hist_col.key]
@@ -347,26 +396,23 @@ def create_version(obj, session, deleted=False):
             if prop.key not in obj_state.dict:
                 getattr(obj, prop.key)
 
-            a, u, d = attributes.get_history(obj, prop.key)
+            added, unchanged, deleted = attributes.get_history(obj, prop.key)
 
-            if d:
-                attr[prop.key] = d[0]
+            if deleted:
+                attr[prop.key] = deleted[0]
                 obj_changed = True
-            elif u:
-                attr[prop.key] = u[0]
-            elif a:
+            elif unchanged:
+                attr[prop.key] = unchanged[0]
+            elif added:
                 # if the attribute had no value.
-                attr[prop.key] = a[0]
+                attr[prop.key] = added[0]
                 obj_changed = True
 
     if not obj_changed:
-        # not changed, but we have relationships.  OK
-        # check those too
+        # not changed, but we have relationships.  OK, check those too
         for prop in obj_mapper.iterate_properties:
             if isinstance(prop, RelationshipProperty) and \
-                attributes.get_history(
-                    obj, prop.key,
-                    passive=attributes.PASSIVE_NO_INITIALIZE).has_changes():
+                    attributes.get_history(obj, prop.key, passive=attributes.PASSIVE_NO_INITIALIZE).has_changes():
                 for p in prop.local_columns:
                     if p.foreign_keys:
                         obj_changed = True
@@ -377,15 +423,21 @@ def create_version(obj, session, deleted=False):
     if not obj_changed and not deleted:
         return
 
-    attr['version'] = obj.version
-    hist = history_cls()
-    for key, value in attr.items():
+    attr[VERSION_COLUMN_NAME] = obj.version
+    hist = history_cls()  # The version object
+    for key, value in attr.items():  # Set the attributes on the version object
         setattr(hist, key, value)
     session.add(hist)
     obj.version += 1
 
 
 def versioned_session(session):
+    """
+    Add a versioning listener to the session
+
+    :param session: The session to wrap
+    :return: None
+    """
     @event.listens_for(session, 'before_flush')
     def before_flush(session, flush_context, instances):
         for obj in versioned_objects(session.dirty):

@@ -1,7 +1,7 @@
 import typing
 
-from statsbiblioteket.harvest.harvest_types import Project, DayEntry, Expense
 from statsbiblioteket.harvest.rest import Rest
+from statsbiblioteket.harvest.typesystem.harvest_types import Project, DayEntry, Expense
 
 
 class Projects(Rest):

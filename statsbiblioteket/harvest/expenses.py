@@ -1,7 +1,7 @@
 import typing
 
-from statsbiblioteket.harvest.harvest_types import Expense
 from statsbiblioteket.harvest.rest import Rest
+from statsbiblioteket.harvest.typesystem.harvest_types import Expense
 
 
 class Expenses(Rest):

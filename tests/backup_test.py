@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.orm import sessionmaker
 
 from statsbiblioteket.harvest import Harvest
-from statsbiblioteket.harvest.harvest_types import User, HarvestDBType, \
+from statsbiblioteket.harvest.typesystem.harvest_types import User, HarvestDBType, \
     Project, Client, Task, Expense, Invoice, DayEntry, TaskAssignment
 from tests.test_base import TestBase
 

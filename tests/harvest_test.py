@@ -2,8 +2,8 @@ import json
 import os
 import sys
 
-from statsbiblioteket.harvest.harvest_types import Day, json_to_harvest
 from statsbiblioteket.harvest.rest import TypeToJSON
+from statsbiblioteket.harvest.typesystem.harvest_types import Day, json_to_harvest
 from tests.test_base import TestBase
 
 sys.path.insert(0, sys.path[0] + "/..")

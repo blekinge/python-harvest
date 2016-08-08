@@ -8,17 +8,14 @@ import inflection
 from sqlalchemy import Table, Column, ForeignKeyConstraint, Integer, DateTime
 from sqlalchemy import event, util
 from sqlalchemy import func
-from sqlalchemy.ext.declarative import DeferredReflection
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import Mapper
 from sqlalchemy.orm import Session
-from sqlalchemy.orm import class_mapper
 from sqlalchemy.orm import mapper, attributes, object_mapper
-from sqlalchemy.orm.attributes import History
 from sqlalchemy.orm.collections import InstrumentedDict, InstrumentedList, \
     InstrumentedSet
-from sqlalchemy.orm.exc import UnmappedColumnError, UnmappedClassError
+from sqlalchemy.orm.exc import UnmappedColumnError
 from sqlalchemy.orm.properties import RelationshipProperty
 from sqlalchemy.orm.state import InstanceState
 
@@ -122,11 +119,14 @@ class HarvestType(object):
         return pformat({name: values})
 
     def __str__(self, *args, **kwargs):
-        name_attr = getattr(self, 'name')
+        mytype = self.__class__.__name__
+        name_attr = getattr(self, 'name', None)
         if name_attr:
-            return self.name
+            name = name_attr
         else:
-            super(HarvestType, self).__str__(args, kwargs)
+            name = str(self.id)
+        return mytype + ': ' + name
+
 
 
 def _lenient_constructor(self, **kwargs):
@@ -161,8 +161,6 @@ HarvestDeclarativeType = declarative_base(cls=HarvestType, mapper=mymap,
 
 class HarvestDBType(HarvestDeclarativeType):
     __abstract__ = True
-        # Fix from https://stackoverflow.com/questions/5733113/sqlalchemy-versioning-cares-about-class-import-order?rq=1
-
 
     @declared_attr
     def _updated_on(cls):
@@ -170,10 +168,7 @@ class HarvestDBType(HarvestDeclarativeType):
         last modified. Changes only to this column does not count as
         a modification of the row"""
         return Column(DateTime, server_default=func.now(), onupdate=func.now(),
-                      info=UNVERSIONED)
-
-
-
+                      info=UNVERSIONED,)
 
 def col_references_table(col: Column, table: Table):
     """

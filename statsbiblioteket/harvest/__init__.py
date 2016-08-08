@@ -12,7 +12,7 @@ from statsbiblioteket.harvest.harvest \
 
 
 # Types
-from statsbiblioteket.harvest.harvest_types import \
+from statsbiblioteket.harvest.typesystem.harvest_types import \
     Day, \
     Client, \
     Contact, \

@@ -1,7 +1,7 @@
 import typing
 
-from statsbiblioteket.harvest.harvest_types import Client
 from statsbiblioteket.harvest.rest import Rest
+from statsbiblioteket.harvest.typesystem.harvest_types import Client
 
 class Clients(Rest):
     # Clients

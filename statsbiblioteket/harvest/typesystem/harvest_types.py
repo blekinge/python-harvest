@@ -6,12 +6,14 @@ import inflection
 from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey
 from sqlalchemy.orm import relationship
 
-from statsbiblioteket.harvest.orm_types import HarvestDBType, HarvestType
+from statsbiblioteket.harvest.typesystem.orm_types import HarvestDBType, HarvestType
 
 _module_name = sys.modules[__name__]
 
 
 def json_to_harvest(json_dict: typing.Dict):
+    # This function should be in orm_types.py, but the explicit reference to
+    # DayEntry class will cause a circular dependency
     """
     If possible, convert the json dictionary to a harvest type object
     :param json_dict: The json dict
@@ -125,9 +127,11 @@ class User(HarvestDBType):
     linked_invoices = relationship('Invoice', back_populates='linked_creator') # type: List[Invoice]
 
     def __str__(self, *args, **kwargs):
-        return '{firstName} {lastName} <{email}>'.format(
-             firstName=self.first_name, lastName=self.last_name,
-             email=self.email)
+        super_str = super(User, self).__str__(args, kwargs)
+        local_str = '{firstName} {lastName} <{email}>'.format(
+            firstName=self.first_name, lastName=self.last_name,
+            email=self.email)
+        return super_str + ' ' + local_str
 
 
 class Project(HarvestDBType):
@@ -420,7 +424,10 @@ class DayEntry(HarvestDBType):
     """
 
     def __str__(self, *args, **kwargs):
-        return "{date} - {project_id} - {hours}".format(date=self.spent_at, project_id=self.project_id, hours=self.hours)
+        super_str = super(DayEntry, self).__str__(args, kwargs)
+        local_str = "{date} - project_id: {project_id} - time: {hours}".format(
+            date=self.spent_at, project_id=self.project_id, hours=self.hours)
+        return super_str + ' (' + local_str + ')'
 
 
 class TaskAssignment(HarvestDBType):
@@ -564,9 +571,11 @@ class Contact(HarvestDBType):
     linked_client = relationship('Client', back_populates="linked_contacts")  # type: Client
 
     def __str__(self, *args, **kwargs):
-        return '{firstName} {lastName} <{email}>'.format(
-                firstName=self.first_name, lastName=self.last_name,
-                email=self.email)
+        super_str = super(Contact, self).__str__(args, kwargs)
+        local_str = '{firstName} {lastName} <{email}>'.format(
+            firstName=self.first_name, lastName=self.last_name,
+            email=self.email)
+        return super_str + ' ' + local_str
 
 
 class Invoice(HarvestDBType):

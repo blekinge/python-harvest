@@ -1,5 +1,6 @@
-from statsbiblioteket.harvest.harvest_types import Day, DayEntry
 from statsbiblioteket.harvest.rest import Rest
+from statsbiblioteket.harvest.typesystem.harvest_types import Day, DayEntry
+
 
 class Timetracking(Rest):
     # Time Tracking

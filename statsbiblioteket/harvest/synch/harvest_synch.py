@@ -205,12 +205,6 @@ def backup(args, harvest_user, harvest_pass):
         # Flush changes to be sure they are available for the following queries
         session.flush()
 
-        # Each object have a database maintained _updated_at datetime field.
-        #  When the object
-        # is upsert'ed as above, this field is set to start_timestamp.
-        # For all tables (except DayEntry) we can now remove all objects
-        # which where the
-        # _updated_at field is less than the start_timestamp
         archive_untouched_rows(TaskAssignment)
         archive_untouched_rows(Expense)
 
@@ -234,9 +228,13 @@ def backup(args, harvest_user, harvest_pass):
 def archive_untouched_rows(cls: HarvestDBType):
     """
     'Archives' the untouched rows
-    TODO make this save old versions rather than just deleting them
-    :param cls:
-    :return:
+    Each object have a database maintained _updated_on datetime field.
+    When the objects upsert'ed as above, this field is set to transaction_now.
+    For all tables (except DayEntry) we can now remove all objects
+    which where the _updated_on field is less than the transaction_now
+
+    :param cls: the Class of the objects to archive
+    :return: None
     """
     query = session.query(cls)  # type: Query
     query = query.filter(cls._updated_on < transaction_now)  # Add a filter
@@ -251,6 +249,15 @@ def archive_untouched_rows(cls: HarvestDBType):
 
 
 def mark_timesheets_as_updated(cls: DayEntry, from_date, to_date):
+    """
+    Mark all timesheets outside the given range as "updated", so they will not
+    be regarded as untouched and thus archived
+
+    :param cls: The class of DayEntry
+    :param from_date: The start of the date range
+    :param to_date: The end of the date range
+    :return: None
+    """
     query = session.query(cls)  # type: Query
     query = query.filter((cls._updated_on < transaction_now) & (
         (cls.spent_at < from_date) | (cls.spent_at > to_date)
@@ -270,7 +277,14 @@ def mark_timesheets_as_updated(cls: DayEntry, from_date, to_date):
     session.flush()
 
 
-def get_history(db_object: HarvestDBType):
+def get_history(db_object: HarvestDBType) -> typing.Dict[typing.Tuple[str]]:
+    """
+    Gets the changes of an object
+
+    :param db_object: the object to examine
+    :return: The changes, as a dict of size 2 tuples. The dict key is the field name,
+    and the first tuple value is the old value, while the second value is the new value
+    """
     state = object_state(db_object)
 
     changes = {}

@@ -1,4 +1,3 @@
-import sys
 import typing
 from typing import List
 
@@ -6,9 +5,8 @@ import inflection
 from sqlalchemy import Column, Integer, String, Boolean, Float, ForeignKey
 from sqlalchemy.orm import relationship
 
+import statsbiblioteket
 from statsbiblioteket.harvest.typesystem.orm_types import HarvestDBType, HarvestType
-
-_module_name = sys.modules[__name__]
 
 
 def json_to_harvest(json_dict: typing.Dict):
@@ -25,7 +23,7 @@ def json_to_harvest(json_dict: typing.Dict):
 
         class_name = inflection.camelize(first_key)
 
-        class_ = getattr(_module_name, class_name)
+        class_ = getattr(statsbiblioteket.harvest.module_name, class_name)
 
         return class_(**json_dict[first_key])
 

@@ -9,8 +9,8 @@ import sqlalchemy
 import sqlalchemy.orm
 from sqlalchemy import func
 from sqlalchemy.orm import Query
-from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.orm import attributes
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.base import object_state
 from sqlalchemy.sql.ddl import CreateTable
 
@@ -18,14 +18,15 @@ from statsbiblioteket.harvest import Harvest
 from statsbiblioteket.harvest.synch import logger
 from statsbiblioteket.harvest.typesystem.harvest_types import *
 from statsbiblioteket.harvest.typesystem.orm_types import versioned_session
+from statsbiblioteket.harvest.utils import logformat
 
 curdir = path.dirname(path.realpath(__file__))
 
 
 def create_parser():
     parser = argparse.ArgumentParser(
-        description='Backups all harvest data from your harvest domain '
-                    'to a SQL database', )
+            description='Backups all harvest data from your harvest domain '
+                        'to a SQL database', )
     parser.add_argument('--domain', action='store', required=True,
                         help='The Harvest domain to backup',
                         dest='harvestDomain')
@@ -56,12 +57,9 @@ def create_parser():
                         help='Get timesheets until this date, format '
                              'YYYY-MM-DD (default: %(default)s)')
 
-    parser.add_argument('--logLevel', default='DEBUG',
-                        help='the log level (default: %(default)s)',
-                        dest='loglevel')
-    parser.add_argument('--logFile', default=curdir + '/default_log.ini',
+    parser.add_argument('--logConf', default=curdir + '/default_log.ini',
                         help='the log file (default: %(default)s)',
-                        dest='logfile')
+                        dest='logconffile')
 
     datetime.today()
     return parser
@@ -69,12 +67,13 @@ def create_parser():
 
 def main():
     parser = create_parser()
-
     args = parser.parse_args()
 
     setup_logging(args)
 
     harvest_pass, harvest_user = get_harvest_credentials(args)
+    if harvest_pass is None:
+        parser.error('Failed to read harvest password from either commandline or the ~/.harvest file')
 
     backup(args, harvest_user, harvest_pass)
 
@@ -82,10 +81,11 @@ def main():
 
 
 def setup_logging(args):
-    logfile = path.expanduser(path.expandvars(args.logfile))
+    logfile = path.expanduser(path.expandvars(args.logconffile))
     if path.exists(logfile):
         logging.config.fileConfig(fname=logfile)
     else:
+        logger.warning(logformat("Specified logfile '{}' not found", logfile))
         logging.config.fileConfig(fname=curdir + '/default_log.ini')
 
 
@@ -109,25 +109,25 @@ def get_harvest_credentials(args):
     harvest_user = None
     harvest_pass = None
     if not args.harvestPassword:
-        with open(expanduser(cred_file)) as harvestPassFile:
-            lines = harvestPassFile.readlines()
-            for line in lines:
-                line = line.strip()
-                if line.startswith("#") or line.isspace():
-                    continue
+        try:
+            with open(expanduser(cred_file)) as harvestPassFile:
+                lines = harvestPassFile.readlines()
+                for line in lines:
+                    line = line.strip()
+                    if line.startswith("#") or line.isspace():
+                        continue
 
-                parts = line.split("=", maxsplit=1)
-                if parts[0] == 'username':
-                    harvest_user = parts[1]
-                if parts[0] == 'password':
-                    harvest_pass = parts[1]
-    else:
+                    parts = line.split("=", maxsplit=1)
+                    if parts[0] == 'username':
+                        harvest_user = parts[1]
+                    if parts[0] == 'password':
+                        harvest_pass = parts[1]
+        except FileNotFoundError:
+            pass
+    if harvest_user is None:
         harvest_user = args.harvestUser
+    if harvest_pass is None:
         harvest_pass = args.harvestPassword
-    if harvest_user is None or harvest_pass is None:
-        logger.warn(
-            "Failed to parse harvest credentials from either the command "
-            "line or from {cred_file}".format(cred_file=cred_file))
     return harvest_pass, harvest_user
 
 
@@ -181,10 +181,10 @@ def backup(args, harvest_user, harvest_pass):
 
         from_date = args.fromDate
         to_date = args.toDate
-        logger.info('For date inverval {} to {}'.format(from_date, to_date))
+        logger.info(logformat('For date inverval {from_} to {to}', from_=from_date, to=to_date))
         for project in projects:  # For each Project
-            logger.info("For Project %s", project.name)
-            logger.add()  # Indent the log statements
+            logger.info(logformat("For Project {}", project.name))
+            logformat.add_indent()
 
             # Get Tasks for each project and store them
             task_assignments = hrvst.get_all_tasks_from_project(project.id)
@@ -200,7 +200,7 @@ def backup(args, harvest_user, harvest_pass):
                                                       end_date=to_date)
             upsert(DayEntry, timesheets)
 
-            logger.sub()  # Remove log indent
+            logformat.sub_indent()
 
         # Flush changes to be sure they are available for the following queries
         session.flush()
@@ -242,7 +242,7 @@ def archive_untouched_rows(cls: HarvestDBType):
     untouched_rows = query.all()  # type: typing.List[HarvestDBType]
 
     def delete(row: HarvestDBType):
-        logger.debug('deleted {row}'.format(row=str(row)))
+        logger.debug(logformat('deleted {}', str(row)))
         session.delete(row)
 
     map(delete, untouched_rows)
@@ -268,16 +268,16 @@ def mark_timesheets_as_updated(cls: DayEntry, from_date, to_date):
 
     for old_row in old_rows:
         old_row._updated_on = transaction_now
-        logger.debug(
+        logger.debug(logformat(
             "Updated timestamp on time entry '{id}' from '{project}' at '{date}' "
-            "by '{user}'".format(id=old_row.id,
+            "by '{user}'", id=old_row.id,
                                  project=old_row.linked_project,
                                  date=old_row.spent_at,
                                  user=old_row.linked_user))
     session.flush()
 
 
-def get_history(db_object: HarvestDBType) -> typing.Dict[typing.Tuple[str]]:
+def get_history(db_object: HarvestDBType) -> typing.Dict:
     """
     Gets the changes of an object
 
@@ -316,9 +316,9 @@ def upsert(cls: HarvestDBType, harvest_objects: typing.Set[HarvestDBType]) -> \
     """
     class_name = inflection.pluralize(cls.__name__)  # Used for log messages
 
-    logger.info("%s: Merging %d harvest objects with database", class_name,
-                len(harvest_objects))
-    logger.add()  # Add indent
+    logger.info(logformat("{className}: Merging {count} harvest objects with database", className=class_name,
+                          count=len(harvest_objects)))
+    logformat.add_indent()
     db_objects = set()
     for harvest_object in harvest_objects:
         db_object = session.merge(harvest_object)  # type: HarvestDBType
@@ -326,14 +326,14 @@ def upsert(cls: HarvestDBType, harvest_objects: typing.Set[HarvestDBType]) -> \
         # if session.is_modified(db_object):
         history = get_history(db_object)
         if history:
-            logger.debug(
-                'Object {id} was changed: {row}'.format(id=str(db_object),
-                                                        row=history))
+            logger.debug(logformat(
+                    'Object {id} was changed: {row}', id=str(db_object),
+                                                            row=history))
         # Mark as updated so it wont get cleaned
         db_object._updated_on = transaction_now
 
     session.flush()
-    logger.sub()  # Reduce indent back
+    logformat.sub_indent()
     return db_objects
 
 

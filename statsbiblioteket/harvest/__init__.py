@@ -4,11 +4,19 @@
 Harvest Time Tracking API Client
 ~~~~~~~~~~~~~~~~
 """
+import logging
+
+import sys
+
+logger = logging.getLogger(__name__)
+
+module_name = sys.modules[__name__]
+
 
 # Methods
 from statsbiblioteket.harvest.harvest \
     import \
-    Harvest, logger
+    Harvest
 
 
 # Types
@@ -32,8 +40,4 @@ __author__ = "Asger Askov Blekinge"
 __email__ = "abr@statsbiblioteket.dk"
 __license__ = "MIT License"
 
-
-
-
-
-
+logging.getLogger(__name__).addHandler(logging.NullHandler())

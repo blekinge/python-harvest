@@ -11,8 +11,6 @@ from statsbiblioteket.harvest.tasks import Tasks
 from statsbiblioteket.harvest.timetracking import Timetracking
 from statsbiblioteket.harvest.users import Users
 
-logger = logging.getLogger(__name__)
-
 
 class Harvest(Clients, Contacts, ExpenseCategories, Invoices, Users, Projects,
               Tasks, Timetracking, TaskAssignments, Expenses):

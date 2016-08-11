@@ -1,7 +1,12 @@
 import logging
-from logging import Logger
 
-logger = logging.getLogger(__name__) # type: Logger
+from statsbiblioteket.harvest.logging import *
+
+logging.setLoggerClass(HarvestLogger)
+
+logger = logging.getLogger(__name__)
+
+
 
 from statsbiblioteket.harvest.synch.harvest_synch \
     import \

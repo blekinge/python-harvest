@@ -18,7 +18,6 @@ from statsbiblioteket.harvest.harvest \
     import \
     Harvest
 
-
 # Types
 from statsbiblioteket.harvest.typesystem.harvest_types import \
     Day, \

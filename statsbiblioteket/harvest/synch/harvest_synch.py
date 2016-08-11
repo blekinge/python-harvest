@@ -18,7 +18,6 @@ from statsbiblioteket.harvest import Harvest
 from statsbiblioteket.harvest.synch import logger
 from statsbiblioteket.harvest.typesystem.harvest_types import *
 from statsbiblioteket.harvest.typesystem.orm_types import versioned_session
-from statsbiblioteket.harvest.utils import logformat
 
 curdir = path.dirname(path.realpath(__file__))
 
@@ -85,7 +84,7 @@ def setup_logging(args):
     if path.exists(logfile):
         logging.config.fileConfig(fname=logfile)
     else:
-        logger.warning(logformat("Specified logfile '{}' not found", logfile))
+        logger.warning("Specified logfile '{file}' not found", file=logfile)
         logging.config.fileConfig(fname=curdir + '/default_log.ini')
 
 
@@ -181,10 +180,10 @@ def backup(args, harvest_user, harvest_pass):
 
         from_date = args.fromDate
         to_date = args.toDate
-        logger.info(logformat('For date inverval {from_} to {to}', from_=from_date, to=to_date))
+        logger.info('For date inverval {from_} to {to}', from_=from_date, to=to_date)
         for project in projects:  # For each Project
-            logger.info(logformat("For Project {}", project.name))
-            logformat.add_indent()
+            logger.info("For Project {name}", name=project.name)
+            # logformat.add_indent()
 
             # Get Tasks for each project and store them
             task_assignments = hrvst.get_all_tasks_from_project(project.id)
@@ -200,7 +199,7 @@ def backup(args, harvest_user, harvest_pass):
                                                       end_date=to_date)
             upsert(DayEntry, timesheets)
 
-            logformat.sub_indent()
+            # logformat.sub_indent()
 
         # Flush changes to be sure they are available for the following queries
         session.flush()
@@ -242,7 +241,7 @@ def archive_untouched_rows(cls: HarvestDBType):
     untouched_rows = query.all()  # type: typing.List[HarvestDBType]
 
     def delete(row: HarvestDBType):
-        logger.debug(logformat('deleted {}', str(row)))
+        logger.debug('deleted {}', row)
         session.delete(row)
 
     map(delete, untouched_rows)
@@ -268,12 +267,11 @@ def mark_timesheets_as_updated(cls: DayEntry, from_date, to_date):
 
     for old_row in old_rows:
         old_row._updated_on = transaction_now
-        logger.debug(logformat(
-            "Updated timestamp on time entry '{id}' from '{project}' at '{date}' "
+        logger.debug("Updated timestamp on time entry '{id}' from '{project}' at '{date}' "
             "by '{user}'", id=old_row.id,
                                  project=old_row.linked_project,
                                  date=old_row.spent_at,
-                                 user=old_row.linked_user))
+                                 user=old_row.linked_user)
     session.flush()
 
 
@@ -316,9 +314,8 @@ def upsert(cls: HarvestDBType, harvest_objects: typing.Set[HarvestDBType]) -> \
     """
     class_name = inflection.pluralize(cls.__name__)  # Used for log messages
 
-    logger.info(logformat("{className}: Merging {count} harvest objects with database", className=class_name,
-                          count=len(harvest_objects)))
-    logformat.add_indent()
+    logger.info("{className}: Merging {count} harvest objects with database", className=class_name, count=len(harvest_objects))
+    # logformat.add_indent()
     db_objects = set()
     for harvest_object in harvest_objects:
         db_object = session.merge(harvest_object)  # type: HarvestDBType
@@ -326,14 +323,12 @@ def upsert(cls: HarvestDBType, harvest_objects: typing.Set[HarvestDBType]) -> \
         # if session.is_modified(db_object):
         history = get_history(db_object)
         if history:
-            logger.debug(logformat(
-                    'Object {id} was changed: {row}', id=str(db_object),
-                                                            row=history))
+            logger.debug('Object {id} was changed: {row}', id=str(db_object), row=history)
         # Mark as updated so it wont get cleaned
         db_object._updated_on = transaction_now
 
     session.flush()
-    logformat.sub_indent()
+    # logformat.sub_indent()
     return db_objects
 
 

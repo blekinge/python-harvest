@@ -1,11 +1,6 @@
-import logging
-
-from statsbiblioteket.harvest.logging import *
-
-logging.setLoggerClass(HarvestLogger)
+from statsbiblioteket.logging import *
 
 logger = logging.getLogger(__name__)
-
 
 
 from statsbiblioteket.harvest.synch.harvest_synch \

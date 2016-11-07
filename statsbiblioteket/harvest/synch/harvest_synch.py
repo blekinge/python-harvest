@@ -51,7 +51,7 @@ def create_parser():
                         help='Get timesheets starting from this date, '
                              'format YYYY-MM-DD (default: %(default)s)')
     parser.add_argument('--to', action='store',
-                        default="{:%Y-%d-%m}".format(date.today()),
+                        default="{:%Y-%m-%d}".format(date.today()),
                         dest='toDate',
                         help='Get timesheets until this date, format '
                              'YYYY-MM-DD (default: %(default)s)')

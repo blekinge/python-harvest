@@ -1,0 +1,17 @@
+[[source]]
+url = "https://pypi.org/"
+verify_ssl = true
+
+[dev-packages]
+pytest = "*"
+pytest-runner = "*"
+setuptools = "*"
+
+[packages]
+argparse = "*"
+sqlalchemy = "*"
+inflection = "*"
+requests_oauthlib = "*"
+typing = "*"
+python_log_indenter = "*"
+requests = "*"
